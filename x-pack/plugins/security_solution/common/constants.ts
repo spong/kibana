@@ -110,6 +110,11 @@ export const IP_REPUTATION_LINKS_SETTING_DEFAULT = `[
 export const SIGNALS_ID = `siem.signals`;
 
 /**
+ * Id's for reference rule types
+ */
+export const REFERENCE_RULE_ALERT_TYPE_ID = `siem.referenceRule`;
+
+/**
  * Id for the notifications alerting type
  */
 export const NOTIFICATIONS_ID = `siem.notifications`;

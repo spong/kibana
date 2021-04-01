@@ -6,7 +6,7 @@
   "configPath": ["xpack", "securitySolution"],
   "requiredPlugins": [
     "actions",
-    "alerting",
+    "ruleRegistry",
     "data",
     "dataEnhanced",
     "embeddable",
