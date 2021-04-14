@@ -24,7 +24,7 @@ type FieldsOf<TFieldMap extends DefaultFieldMap> =
 
 type Fields<TPattern extends string> = Array<{ field: TPattern } | TPattern> | TPattern;
 
-export type FieldsESSearchRequest<TFieldMap extends DefaultFieldMap> = ESSearchRequest & {
+type FieldsESSearchRequest<TFieldMap extends DefaultFieldMap> = ESSearchRequest & {
   body?: { fields: FieldsOf<TFieldMap> };
 };
 
