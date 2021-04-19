@@ -6,6 +6,9 @@
 # 2.0.
 #
 
+# TODO: create a persistence rule matching against `signal.rule.id`
+# (the id of the rule type) or whatever the equivalent field is.
+# Have the persistence rule create those fields on the alert.
 curl -X POST http://localhost:5601/${BASE_PATH}/api/alerts/alert \
      -u ${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD} \
      -H 'kbn-xsrf: true' \
@@ -14,20 +17,22 @@ curl -X POST http://localhost:5601/${BASE_PATH}/api/alerts/alert \
      -d '
 {
   "params":{
-      "server":"howdy",
-      "threshold": 0.90
+     "indexPatterns": ["*"],
+     "customQuery": "rule.id:siem.referenceRule"
    },
    "consumer":"alerts",
-   "alertTypeId":"siem.referenceRule",
+   "alertTypeId":"siem.customRule",
    "schedule":{
       "interval":"1m"
    },
    "actions":[],
    "tags":[
-      "cpu"
+      "custom",
+      "hierarchical",
+      "persistence"
    ],
    "notifyWhen":"onActionGroupChange",
-   "name":"Basic lifecycle rule"
+   "name":"Hierarchical custom query rule"
 }'
 
 

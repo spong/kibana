@@ -29,6 +29,8 @@ export const defaultFieldMap = {
   'kibana.rac.alert.severity.level': { type: 'keyword' },
   'kibana.rac.alert.severity.value': { type: 'long' },
   'kibana.rac.alert.status': { type: 'keyword' },
+  'kibana.rac.alert.ancestors': { array: true, type: 'keyword' },
+  'kibana.rac.alert.depth': { type: 'long' },
 } as const;
 
 export type DefaultFieldMap = typeof defaultFieldMap;

@@ -14,20 +14,21 @@ curl -X POST http://localhost:5601/${BASE_PATH}/api/alerts/alert \
      -d '
 {
   "params":{
-      "server":"howdy",
-      "threshold": 0.90
+     "indexPatterns": ["*"],
+     "eqlQuery": "sequence by hostname [network where true]"
    },
    "consumer":"alerts",
-   "alertTypeId":"siem.referenceRule",
+   "alertTypeId":"siem.eqlRule",
    "schedule":{
       "interval":"1m"
    },
    "actions":[],
    "tags":[
-      "cpu"
+      "eql",
+      "persistence"
    ],
    "notifyWhen":"onActionGroupChange",
-   "name":"Basic lifecycle rule"
+   "name":"Basic EQL rule"
 }'
 
 
