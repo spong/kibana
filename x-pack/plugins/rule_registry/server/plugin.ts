@@ -12,10 +12,10 @@ import {
 } from '../../alerting/server';
 import { RuleRegistry } from './rule_registry';
 import { defaultIlmPolicy } from './rule_registry/defaults/ilm_policy';
-import { defaultFieldMap } from './rule_registry/defaults/field_map';
+import { BaseRuleFieldMap, baseRuleFieldMap } from '../common';
 import { RuleRegistryConfig } from '.';
 
-export type RuleRegistryPluginSetupContract = RuleRegistry<typeof defaultFieldMap>;
+export type RuleRegistryPluginSetupContract = RuleRegistry<BaseRuleFieldMap>;
 
 export class RuleRegistryPlugin implements Plugin<RuleRegistryPluginSetupContract> {
   constructor(private readonly initContext: PluginInitializerContext) {
@@ -34,13 +34,13 @@ export class RuleRegistryPlugin implements Plugin<RuleRegistryPluginSetupContrac
     const rootRegistry = new RuleRegistry({
       coreSetup: core,
       ilmPolicy: defaultIlmPolicy,
-      fieldMap: defaultFieldMap,
+      fieldMap: baseRuleFieldMap,
       kibanaIndex: globalConfig.kibana.index,
       name: 'alerts',
       kibanaVersion: this.initContext.env.packageInfo.version,
       logger: logger.get('root'),
       alertingPluginSetupContract: plugins.alerting,
-      writeEnabled: config.writeEnabled,
+      writeEnabled: config.unsafe.write.enabled,
     });
 
     return rootRegistry;
