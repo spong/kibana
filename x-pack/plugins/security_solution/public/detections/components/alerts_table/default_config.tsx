@@ -10,14 +10,9 @@ import { Status } from '../../../../common/detection_engine/schemas/common/schem
 import { Filter } from '../../../../../../../src/plugins/data/common/es_query';
 
 import { defaultColumnHeaderType } from '../../../timelines/components/timeline/body/column_headers/default_headers';
-import {
-  DEFAULT_COLUMN_MIN_WIDTH,
-  DEFAULT_DATE_COLUMN_MIN_WIDTH,
-} from '../../../timelines/components/timeline/body/constants';
 import { ColumnHeaderOptions, SubsetTimelineModel } from '../../../timelines/store/timeline/model';
 import { timelineDefaults } from '../../../timelines/store/timeline/defaults';
-
-import * as i18n from './translations';
+import { columns } from '../../configurations/security_solution_detections/columns';
 
 export const buildAlertStatusFilter = (status: Status): Filter[] => [
   // {
@@ -98,85 +93,7 @@ export const buildThreatMatchFilter = (showOnlyThreatIndicatorAlerts: boolean): 
       ]
     : [];
 
-export const alertsHeaders2: ColumnHeaderOptions[] = [
-  {
-    columnHeaderType: defaultColumnHeaderType,
-    id: '@timestamp',
-    width: DEFAULT_DATE_COLUMN_MIN_WIDTH + 5,
-  },
-  {
-    columnHeaderType: defaultColumnHeaderType,
-    id: 'signal.rule.name',
-    label: i18n.ALERTS_HEADERS_RULE,
-    linkField: 'signal.rule.id',
-    width: DEFAULT_COLUMN_MIN_WIDTH,
-  },
-  {
-    columnHeaderType: defaultColumnHeaderType,
-    id: 'signal.rule.version',
-    label: i18n.ALERTS_HEADERS_VERSION,
-    width: 95,
-  },
-  {
-    columnHeaderType: defaultColumnHeaderType,
-    id: 'signal.rule.type',
-    label: i18n.ALERTS_HEADERS_METHOD,
-    width: 100,
-  },
-  {
-    columnHeaderType: defaultColumnHeaderType,
-    id: 'signal.rule.severity',
-    label: i18n.ALERTS_HEADERS_SEVERITY,
-    width: 105,
-  },
-  {
-    columnHeaderType: defaultColumnHeaderType,
-    id: 'signal.rule.risk_score',
-    label: i18n.ALERTS_HEADERS_RISK_SCORE,
-    width: 115,
-  },
-  {
-    columnHeaderType: defaultColumnHeaderType,
-    id: 'event.module',
-    linkField: 'rule.reference',
-    width: DEFAULT_COLUMN_MIN_WIDTH,
-  },
-  {
-    category: 'event',
-    columnHeaderType: defaultColumnHeaderType,
-    id: 'event.action',
-    type: 'string',
-    aggregatable: true,
-    width: 140,
-  },
-  {
-    columnHeaderType: defaultColumnHeaderType,
-    id: 'event.category',
-    width: 150,
-  },
-  {
-    columnHeaderType: defaultColumnHeaderType,
-    id: 'host.name',
-    width: 120,
-  },
-  {
-    columnHeaderType: defaultColumnHeaderType,
-    id: 'user.name',
-    width: 120,
-  },
-  {
-    columnHeaderType: defaultColumnHeaderType,
-    id: 'source.ip',
-    width: 120,
-  },
-  {
-    columnHeaderType: defaultColumnHeaderType,
-    id: 'destination.ip',
-    width: 140,
-  },
-];
-
-export const requiredFieldsForActions = [
+export const requiredFieldsForActionsAAD = [
   'alert.id',
   '@timestamp',
   'event.kind',
@@ -193,7 +110,7 @@ export const requiredFieldsForActions = [
   'tags',
 ];
 
-export const alertsHeaders: ColumnHeaderOptions[] = requiredFieldsForActions.map<ColumnHeaderOptions>(
+export const alertsHeadersAAD: ColumnHeaderOptions[] = requiredFieldsForActionsAAD.map<ColumnHeaderOptions>(
   (field) => ({
     columnHeaderType: defaultColumnHeaderType,
     id: field,
@@ -201,9 +118,38 @@ export const alertsHeaders: ColumnHeaderOptions[] = requiredFieldsForActions.map
   })
 );
 
+const ruleRegistryFeatureFlagEnabled = true;
+const currentColumns = ruleRegistryFeatureFlagEnabled ? alertsHeadersAAD : columns;
+
 export const alertsDefaultModel: SubsetTimelineModel = {
   ...timelineDefaults,
-  columns: alertsHeaders,
+  columns: currentColumns,
   showCheckboxes: true,
   excludedRowRendererIds: Object.values(RowRendererId),
 };
+
+export const requiredFieldsForActions = [
+  '@timestamp',
+  'signal.status',
+  'signal.group.id',
+  'signal.original_time',
+  'signal.rule.building_block_type',
+  'signal.rule.filters',
+  'signal.rule.from',
+  'signal.rule.language',
+  'signal.rule.query',
+  'signal.rule.name',
+  'signal.rule.to',
+  'signal.rule.id',
+  'signal.rule.index',
+  'signal.rule.type',
+  'signal.original_event.kind',
+  'signal.original_event.module',
+  // Endpoint exception fields
+  'file.path',
+  'file.Ext.code_signature.subject_name',
+  'file.Ext.code_signature.trusted',
+  'file.hash.sha256',
+  'host.os.family',
+  'event.code',
+];
