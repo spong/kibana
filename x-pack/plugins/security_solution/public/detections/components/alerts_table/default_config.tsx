@@ -93,37 +93,9 @@ export const buildThreatMatchFilter = (showOnlyThreatIndicatorAlerts: boolean): 
       ]
     : [];
 
-export const requiredFieldsForActionsAAD = [
-  'alert.id',
-  '@timestamp',
-  'event.kind',
-  'alert.start',
-  'alert.uuid',
-  'event.action',
-  'alert.status',
-  'alert.duration.us',
-  'rule.uuid',
-  'rule.id',
-  'rule.name',
-  'rule.category',
-  'producer',
-  'tags',
-];
-
-export const alertsHeadersAAD: ColumnHeaderOptions[] = requiredFieldsForActionsAAD.map<ColumnHeaderOptions>(
-  (field) => ({
-    columnHeaderType: defaultColumnHeaderType,
-    id: field,
-    width: 120,
-  })
-);
-
-const ruleRegistryFeatureFlagEnabled = true;
-const currentColumns = ruleRegistryFeatureFlagEnabled ? alertsHeadersAAD : columns;
-
 export const alertsDefaultModel: SubsetTimelineModel = {
   ...timelineDefaults,
-  columns: currentColumns,
+  columns,
   showCheckboxes: true,
   excludedRowRendererIds: Object.values(RowRendererId),
 };
@@ -153,3 +125,36 @@ export const requiredFieldsForActions = [
   'host.os.family',
   'event.code',
 ];
+
+// TODO: Once we are past experimental phase this code should be removed
+export const requiredFieldsForActionsRuleRegistry = [
+  'alert.id',
+  '@timestamp',
+  'event.kind',
+  'alert.start',
+  'alert.uuid',
+  'event.action',
+  'alert.status',
+  'alert.duration.us',
+  'rule.uuid',
+  'rule.id',
+  'rule.name',
+  'rule.category',
+  'producer',
+  'tags',
+];
+
+export const alertsHeadersRuleRegistry: ColumnHeaderOptions[] = requiredFieldsForActionsRuleRegistry.map<ColumnHeaderOptions>(
+  (field) => ({
+    columnHeaderType: defaultColumnHeaderType,
+    id: field,
+    width: 120,
+  })
+);
+
+export const alertsDefaultModelRuleRegistry: SubsetTimelineModel = {
+  ...timelineDefaults,
+  columns: alertsHeadersRuleRegistry,
+  showCheckboxes: true,
+  excludedRowRendererIds: Object.values(RowRendererId),
+};

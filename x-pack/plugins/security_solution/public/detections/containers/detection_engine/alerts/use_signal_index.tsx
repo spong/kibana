@@ -6,8 +6,10 @@
  */
 
 import { useEffect, useState } from 'react';
+import { DEFAULT_ALERTS_INDEX } from '../../../../../common/constants';
 
 import { useAppToasts } from '../../../../common/hooks/use_app_toasts';
+import { useIsExperimentalFeatureEnabled } from '../../../../common/hooks/use_experimental_features';
 import { createSignalIndex, getSignalIndex } from './api';
 import * as i18n from './translations';
 import { isSecurityAppError } from '../../../../common/utils/api';
@@ -36,6 +38,8 @@ export const useSignalIndex = (): ReturnSignalIndex => {
     createDeSignalIndex: null,
   });
   const { addError } = useAppToasts();
+  // TODO: Once we are past experimental phase this code should be removed
+  const ruleRegistryEnabled = useIsExperimentalFeatureEnabled('ruleRegistryEnabled');
 
   useEffect(() => {
     let isSubscribed = true;
@@ -46,10 +50,15 @@ export const useSignalIndex = (): ReturnSignalIndex => {
         setLoading(true);
         const signal = await getSignalIndex({ signal: abortCtrl.signal });
 
+        // TODO: Once we are past experimental phase we can update `getSignalIndex` to return the space-aware DEFAULT_ALERTS_INDEX
+        const signalIndices = ruleRegistryEnabled
+          ? `${DEFAULT_ALERTS_INDEX},${signal.name}`
+          : signal.name;
+
         if (isSubscribed && signal != null) {
           setSignalIndex({
             signalIndexExists: true,
-            signalIndexName: signal.name,
+            signalIndexName: signalIndices,
             signalIndexMappingOutdated: signal.index_mapping_outdated,
             createDeSignalIndex: createIndex,
           });
@@ -107,7 +116,7 @@ export const useSignalIndex = (): ReturnSignalIndex => {
       isSubscribed = false;
       abortCtrl.abort();
     };
-  }, [addError]);
+  }, [addError, ruleRegistryEnabled]);
 
   return { loading, ...signalIndex };
 };

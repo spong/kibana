@@ -25,6 +25,7 @@ export const DEFAULT_REFRESH_RATE_INTERVAL = 'timepicker:refreshIntervalDefaults
 export const DEFAULT_APP_TIME_RANGE = 'securitySolution:timeDefaults';
 export const DEFAULT_APP_REFRESH_INTERVAL = 'securitySolution:refreshIntervalDefaults';
 export const DEFAULT_SIGNALS_INDEX = '.siem-signals';
+export const DEFAULT_ALERTS_INDEX = '*alerts-security-solution*';
 export const DEFAULT_MAX_SIGNALS = 100;
 export const DEFAULT_SEARCH_AFTER_PAGE_SIZE = 100;
 export const DEFAULT_ANOMALY_SCORE = 'securitySolution:defaultAnomalyScore';
