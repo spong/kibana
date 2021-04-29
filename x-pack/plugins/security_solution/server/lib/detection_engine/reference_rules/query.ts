@@ -10,17 +10,18 @@ import { schema } from '@kbn/config-schema';
 import { buildEsQuery, IIndexPattern } from '../../../../../../../src/plugins/data/common';
 
 import { createPersistenceRuleTypeFactory } from '../../../../../rule_registry/server';
-import { REFERENCE_RULE_PERSISTENCE_ALERT_TYPE_ID } from '../../../../common/constants';
+import { CUSTOM_ALERT_TYPE_ID } from '../../../../common/constants';
 import { SecurityRuleRegistry } from '../../../plugin';
 
-const createSecurityPersistenceRuleType = createPersistenceRuleTypeFactory<SecurityRuleRegistry>();
+const createSecurityCustomRuleType = createPersistenceRuleTypeFactory<SecurityRuleRegistry>();
 
-export const referenceRulePersistenceAlertType = createSecurityPersistenceRuleType({
-  id: REFERENCE_RULE_PERSISTENCE_ALERT_TYPE_ID,
-  name: 'ReferenceRule persistence alert type',
+export const queryAlertType = createSecurityCustomRuleType({
+  id: CUSTOM_ALERT_TYPE_ID,
+  name: 'Custom Query Rule',
   validate: {
     params: schema.object({
-      query: schema.string(),
+      indexPatterns: schema.arrayOf(schema.string()),
+      customQuery: schema.string(),
     }),
   },
   actionGroups: [
@@ -35,20 +36,21 @@ export const referenceRulePersistenceAlertType = createSecurityPersistenceRuleTy
   },
   minimumLicenseRequired: 'basic',
   producer: 'security-solution',
-  async executor({ services: { alertWithPersistence, findAlerts }, params }) {
+  async executor({
+    services: { alertWithPersistence, findAlerts },
+    params: { indexPatterns, customQuery },
+  }) {
     const indexPattern: IIndexPattern = {
       fields: [],
-      title: '*',
+      title: indexPatterns.join(),
     };
 
-    const esQuery = buildEsQuery(indexPattern, { query: params.query, language: 'kuery' }, []);
+    // TODO: kql or lucene?
+
+    const esQuery = buildEsQuery(indexPattern, { query: customQuery, language: 'kuery' }, []);
     const query = {
       body: {
-        query: {
-          bool: {
-            must: esQuery.bool.must, // FIXME
-          },
-        },
+        query: esQuery,
         fields: ['*'],
         sort: {
           '@timestamp': 'asc' as const,
@@ -56,6 +58,7 @@ export const referenceRulePersistenceAlertType = createSecurityPersistenceRuleTy
       },
     };
 
+    // @ts-expect-error Filter[] is not assignable to QueryContainer[]
     const alerts = await findAlerts(query);
     alertWithPersistence(alerts).forEach((alert) => {
       alert.scheduleActions('default', { server: 'server-test' });
