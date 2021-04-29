@@ -30,6 +30,7 @@ export const baseRuleFieldMap = {
   'kibana.rac.alert.status': { type: 'keyword' },
   'kibana.rac.alert.ancestors': { array: true, type: 'keyword' },
   'kibana.rac.alert.depth': { type: 'long' },
+  'kibana.rac.alert.building_block_type': { type: 'keyword' },
 } as const;
 
 export type BaseRuleFieldMap = typeof baseRuleFieldMap;
