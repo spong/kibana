@@ -7,7 +7,7 @@
   "requiredPlugins": [
     "actions",
     "alerting",
-    "ruleRegistry",
+    "cases",
     "data",
     "dataEnhanced",
     "embeddable",
@@ -16,6 +16,7 @@
     "inspector",
     "licensing",
     "maps",
+    "ruleRegistry",
     "triggersActionsUi",
     "uiActions"
   ],
