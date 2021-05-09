@@ -4,7 +4,6 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-
 import { renderHook, act } from '@testing-library/react-hooks';
 import { TestProviders } from '../../../../common/mock';
 import { useSignalIndex, ReturnSignalIndex } from './use_signal_index';
@@ -54,6 +53,7 @@ describe('useSignalIndex', () => {
       );
       await waitForNextUpdate();
       await waitForNextUpdate();
+      await waitForNextUpdate();
       expect(result.current).toEqual({
         createDeSignalIndex: result.current.createDeSignalIndex,
         loading: false,
@@ -72,6 +72,7 @@ describe('useSignalIndex', () => {
           wrapper: TestProviders,
         }
       );
+      await waitForNextUpdate();
       await waitForNextUpdate();
       await waitForNextUpdate();
       if (result.current.createDeSignalIndex != null) {
@@ -99,6 +100,7 @@ describe('useSignalIndex', () => {
       );
       await waitForNextUpdate();
       await waitForNextUpdate();
+      await waitForNextUpdate();
       if (result.current.createDeSignalIndex != null) {
         await result.current.createDeSignalIndex();
       }
@@ -119,6 +121,7 @@ describe('useSignalIndex', () => {
           wrapper: TestProviders,
         }
       );
+      await waitForNextUpdate();
       await waitForNextUpdate();
       await waitForNextUpdate();
       if (result.current.createDeSignalIndex != null) {
@@ -146,6 +149,7 @@ describe('useSignalIndex', () => {
           wrapper: TestProviders,
         }
       );
+      await waitForNextUpdate();
       await waitForNextUpdate();
       await waitForNextUpdate();
       expect(result.current).toEqual({

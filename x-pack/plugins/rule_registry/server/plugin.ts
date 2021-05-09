@@ -5,53 +5,46 @@
  * 2.0.
  */
 
-import { PluginInitializerContext, Plugin, CoreSetup, CoreStart } from 'src/core/server';
-import {
-  PluginSetupContract as AlertingPluginSetupContract,
-  PluginStartContract as AlertPluginStartContract,
-} from '../../alerting/server';
-import { RuleRegistry } from './rule_registry';
-import { defaultIlmPolicy } from './rule_registry/defaults/ilm_policy';
-import { BaseRuleFieldMap, baseRuleFieldMap } from '../common';
-import { RuleRegistryConfig } from '.';
+import { PluginInitializerContext, Plugin, CoreSetup } from 'src/core/server';
+import { RuleDataPluginService } from './rule_data_plugin_service';
+import { RuleRegistryPluginConfig } from '.';
 
-export type RuleRegistryPluginSetupContract = RuleRegistry<BaseRuleFieldMap>;
+export type RuleRegistryPluginSetupContract = RuleDataPluginService;
+export type RuleRegistryPluginStartContract = void;
 
 export class RuleRegistryPlugin implements Plugin<RuleRegistryPluginSetupContract> {
   constructor(private readonly initContext: PluginInitializerContext) {
     this.initContext = initContext;
   }
 
-  public setup(
-    core: CoreSetup,
-    plugins: { alerting: AlertingPluginSetupContract }
-  ): RuleRegistryPluginSetupContract {
+  public setup(core: CoreSetup): RuleRegistryPluginSetupContract {
     const globalConfig = this.initContext.config.legacy.get();
-    const config = this.initContext.config.get<RuleRegistryConfig>();
+    const config = this.initContext.config.get<RuleRegistryPluginConfig>();
 
     const logger = this.initContext.logger.get();
 
-    const rootRegistry = new RuleRegistry({
-      coreSetup: core,
-      ilmPolicy: defaultIlmPolicy,
-      fieldMap: baseRuleFieldMap,
+    const service = new RuleDataPluginService({
+      logger,
+      isWriteEnabled: config.unsafe.write.enabled,
       kibanaIndex: globalConfig.kibana.index,
-      name: 'alerts',
-      kibanaVersion: this.initContext.env.packageInfo.version,
-      logger: logger.get('root'),
-      alertingPluginSetupContract: plugins.alerting,
-      writeEnabled: config.unsafe.write.enabled,
+      getClusterClient: async () => {
+        const [coreStart] = await core.getStartServices();
+
+        return coreStart.elasticsearch.client.asInternalUser;
+      },
     });
 
-    return rootRegistry;
+    service.init().catch((originalError) => {
+      const error = new Error('Failed installing assets');
+      // @ts-ignore
+      error.stack = originalError.stack;
+      logger.error(error);
+    });
+
+    return service;
   }
 
-  // Temporarily exposing alerting client as passthrough
-  public start(core: CoreStart, plugins: { alerting: AlertPluginStartContract }) {
-    return {
-      alerting: plugins.alerting,
-    };
-  }
+  public start(): RuleRegistryPluginStartContract {}
 
   public stop() {}
 }
