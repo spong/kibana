@@ -338,6 +338,37 @@ export const exportRules = async ({
 };
 
 /**
+ * EXPERIMENTAL FEATURE: See `ruleExportToIndexEnabled`
+ * Export rules from the server to an ES Index
+ *
+ * @param excludeExportDetails whether or not to exclude additional details at bottom of exported file (defaults to false)
+ * @param filename of exported rules. Be sure to include `.ndjson` extension! (defaults to localized `rules_export.ndjson`)
+ * @param ruleIds array of rule_id's (not id!) to export (empty array exports _all_ rules)
+ * @param signal AbortSignal for cancelling request
+ *
+ * @throws An error if response is not OK
+ */
+export const exportRulesToIndex = async ({
+  ids = [],
+  signal,
+}: ExportDocumentsProps): Promise<Blob> => {
+  const body =
+    ids.length > 0
+      ? JSON.stringify({ objects: ids.map((rule) => ({ rule_id: rule })) })
+      : undefined;
+
+  return KibanaServices.get().http.fetch<Blob>(`${DETECTION_ENGINE_RULES_URL}/_export`, {
+    method: 'POST',
+    body,
+    query: {
+      exclude_export_details: excludeExportDetails,
+      file_name: filename,
+    },
+    signal,
+  });
+};
+
+/**
  * Get Rule Status provided Rule ID
  *
  * @param id string of Rule ID's (not rule_id)

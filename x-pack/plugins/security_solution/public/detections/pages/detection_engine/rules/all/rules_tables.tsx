@@ -17,6 +17,7 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { debounce } from 'lodash/fp';
 import { History } from 'history';
+import { useIsExperimentalFeatureEnabled } from '../../../../../common/hooks/use_experimental_features';
 
 import {
   useRulesTable,
@@ -149,7 +150,7 @@ export const RulesTables = React.memo<RulesTableProps>(
     const [, dispatchToaster] = useStateToaster();
     const mlCapabilities = useMlCapabilities();
     const { navigateToApp } = useKibana().services.application;
-
+    const ruleExportToIndexEnabled = useIsExperimentalFeatureEnabled('ruleExportToIndexEnabled');
     // TODO: Refactor license check + hasMlAdminPermissions to common check
     const hasMlPermissions = hasMlLicense(mlCapabilities) && hasMlAdminPermissions(mlCapabilities);
 
@@ -215,6 +216,7 @@ export const RulesTables = React.memo<RulesTableProps>(
           filterQuery: convertRulesFilterToKQL(filterOptions),
           confirmDeletion,
           selectedItemsCount,
+          ruleExportToIndexEnabled,
         });
       },
       [

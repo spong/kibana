@@ -25,6 +25,7 @@ import {
   duplicateRules,
   enableRules,
   exportRules,
+  exportRulesToIndex,
   performBulkAction,
   Rule,
   RulesTableAction,
@@ -199,4 +200,23 @@ export const rulesBulkActionByQuery = async (
   } finally {
     dispatch({ type: 'loadingRuleIds', ids: [], actionType: null });
   }
+};
+
+export const exportRulesToIndexAction = async (
+  ids: string[],
+  dispatch: React.Dispatch<RulesTableAction>,
+  dispatchToaster: Dispatch<ActionToaster>
+) => {
+  // TODO: Show confirmation/warning dialog
+  try {
+    const response = await exportRulesToIndex({ ids });
+
+    // dispatch({ type: 'updateRules', rules });
+
+    // track(
+    //   METRIC_TYPE.COUNT,
+    //   enabled ? TELEMETRY_EVENT.SIEM_RULE_ENABLED : TELEMETRY_EVENT.SIEM_RULE_DISABLED
+    // );
+    // }
+  } catch (e) {}
 };

@@ -6,6 +6,7 @@
  */
 
 import { RuleDataPluginService } from '../../../rule_registry/server';
+import { exportRulesToIndexRoute } from '../lib/detection_engine/routes/rules/export_rules_to_index_route';
 
 import { SecuritySolutionPluginRouter } from '../types';
 
@@ -64,7 +65,8 @@ export const initRoutes = (
   security: SetupPlugins['security'],
   ml: SetupPlugins['ml'],
   ruleDataService: RuleDataPluginService,
-  isRuleRegistryEnabled: boolean
+  isRuleRegistryEnabled: boolean,
+  isRuleExportToIndexEnabled: boolean
 ) => {
   // Detection Engine Rule routes that have the REST endpoints of /api/detection_engine/rules
   // All REST rule creation, deletion, updating, etc......
@@ -89,6 +91,9 @@ export const initRoutes = (
   patchTimelinesRoute(router, config, security);
   importRulesRoute(router, config, ml, isRuleRegistryEnabled);
   exportRulesRoute(router, config, isRuleRegistryEnabled);
+  if (isRuleExportToIndexEnabled) {
+    exportRulesToIndexRoute(router, config);
+  }
 
   importTimelinesRoute(router, config, security);
   exportTimelinesRoute(router, config, security);

@@ -15,6 +15,7 @@ import {
   duplicateRulesAction,
   enableRulesAction,
   exportRulesAction,
+  exportRulesToIndexAction,
 } from './actions';
 import { ActionToaster, displayWarningToast } from '../../../../../common/components/toasters';
 import { Rule } from '../../../../containers/detection_engine/rules';
@@ -38,6 +39,7 @@ interface GetBatchItems {
   filterQuery: string;
   confirmDeletion: () => Promise<boolean>;
   selectedItemsCount: number;
+  ruleExportToIndexEnabled?: boolean;
 }
 
 export const getBatchItems = ({
@@ -55,6 +57,7 @@ export const getBatchItems = ({
   filterQuery,
   confirmDeletion,
   selectedItemsCount,
+  ruleExportToIndexEnabled = false,
 }: GetBatchItems) => {
   const selectedRules = rules.filter(({ id }) => selectedRuleIds.includes(id));
 
@@ -176,6 +179,11 @@ export const getBatchItems = ({
     }
   };
 
+  const handleExportToIndexAction = async () => {
+    closePopover();
+    await exportRulesToIndexAction([], dispatch, dispatchToaster);
+  };
+
   return [
     <EuiContextMenuItem
       key={i18n.BATCH_ACTION_ACTIVATE_SELECTED}
@@ -241,5 +249,17 @@ export const getBatchItems = ({
     >
       {i18n.BATCH_ACTION_DELETE_SELECTED}
     </EuiContextMenuItem>,
+    ...(ruleExportToIndexEnabled
+      ? [
+          <EuiContextMenuItem
+            key={i18n.BATCH_ACTION_EXPORT_TO_INDEX_SELECTED}
+            data-test-subj="exportRuleToIndexBulk"
+            icon="exportAction"
+            onClick={handleExportToIndexAction}
+          >
+            {i18n.BATCH_ACTION_EXPORT_TO_INDEX_SELECTED}
+          </EuiContextMenuItem>,
+        ]
+      : []),
   ];
 };

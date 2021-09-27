@@ -128,6 +128,13 @@ export const BATCH_ACTION_EXPORT_SELECTED = i18n.translate(
   }
 );
 
+export const BATCH_ACTION_EXPORT_TO_INDEX_SELECTED = i18n.translate(
+  'xpack.securitySolution.detectionEngine.rules.allRules.batchActions.exportSelectedTitle',
+  {
+    defaultMessage: 'Export selected to index',
+  }
+);
+
 export const BATCH_ACTION_DUPLICATE_SELECTED = i18n.translate(
   'xpack.securitySolution.detectionEngine.rules.allRules.batchActions.duplicateSelectedTitle',
   {
