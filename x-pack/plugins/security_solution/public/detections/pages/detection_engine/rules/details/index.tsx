@@ -721,6 +721,7 @@ const RuleDetailsPageComponent: React.FC<DetectionEngineComponentProps> = ({
                           isReadOnlyView={true}
                           isLoading={false}
                           defaultValues={defineRuleData}
+                          rule={rule}
                         />
                       )}
                     </StepPanel>

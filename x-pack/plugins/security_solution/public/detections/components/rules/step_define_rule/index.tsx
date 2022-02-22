@@ -21,6 +21,7 @@ import { hasMlAdminPermissions } from '../../../../../common/machine_learning/ha
 import { hasMlLicense } from '../../../../../common/machine_learning/has_ml_license';
 import { useMlCapabilities } from '../../../../common/components/ml/hooks/use_ml_capabilities';
 import { useUiSetting$ } from '../../../../common/lib/kibana';
+import { Rule } from '../../../containers/detection_engine/rules';
 import { filterRuleFieldsForType } from '../../../pages/detection_engine/rules/create/helpers';
 import {
   DefineStepRule,
@@ -62,6 +63,7 @@ const CommonUseField = getUseField({ component: Field });
 
 interface StepDefineRuleProps extends RuleStepProps {
   defaultValues?: DefineStepRule;
+  rule?: Rule;
 }
 
 export const stepDefineDefaultValue: DefineStepRule = {
@@ -135,6 +137,7 @@ const StepDefineRuleComponent: FC<StepDefineRuleProps> = ({
   isUpdateView = false,
   onSubmit,
   setForm,
+  rule,
 }) => {
   const mlCapabilities = useMlCapabilities();
   const [openTimelineSearch, setOpenTimelineSearch] = useState(false);
@@ -347,6 +350,7 @@ const StepDefineRuleComponent: FC<StepDefineRuleProps> = ({
         indexPatterns={indexPatterns}
         schema={filterRuleFieldsForType(schema, ruleType)}
         data={filterRuleFieldsForType(initialState, ruleType)}
+        rule={rule}
       />
     </StepContentWrapper>
   ) : (

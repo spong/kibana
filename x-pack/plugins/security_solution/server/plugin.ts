@@ -262,7 +262,8 @@ export class Plugin implements ISecuritySolutionPlugin {
       core.getStartServices,
       securityRuleTypeOptions,
       previewRuleDataClient,
-      this.telemetryReceiver
+      this.telemetryReceiver,
+      endpointContext
     );
     registerEndpointRoutes(router, endpointContext);
     registerLimitedConcurrencyRoutes(core);
@@ -363,7 +364,15 @@ export class Plugin implements ISecuritySolutionPlugin {
       // from where authz can be derived)
       false
     );
-    const { authz, agentService, packageService, packagePolicyService, agentPolicyService } =
+    const {
+      authz,
+      agentService,
+      packageService,
+      packagePolicyService,
+      agentPolicyService,
+      esIndexPatternService,
+      createArtifactsClient,
+    } =
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       plugins.fleet!;
     let manifestManager: ManifestManager | undefined;
@@ -418,6 +427,8 @@ export class Plugin implements ISecuritySolutionPlugin {
       fleetAuthzService: authz,
       agentService,
       packageService,
+      esIndexPatternService,
+      createArtifactsClient,
       packagePolicyService,
       agentPolicyService,
       endpointMetadataService: new EndpointMetadataService(
@@ -430,6 +441,8 @@ export class Plugin implements ISecuritySolutionPlugin {
         {
           agentService,
           packageService,
+          esIndexPatternService,
+          createArtifactsClient,
           packagePolicyService,
           agentPolicyService,
         },

@@ -6,6 +6,8 @@
  */
 
 import { KibanaRequest, SavedObjectsClientContract, SavedObjectsServiceStart } from 'kibana/server';
+import { ESIndexPatternService } from '../../../../../fleet/server';
+import { FleetArtifactsClient } from '../../../../../fleet/server/services/artifacts';
 import type {
   AgentClient,
   AgentPolicyServiceInterface,
@@ -25,7 +27,12 @@ export class EndpointFleetServicesFactory implements EndpointFleetServicesFactor
   constructor(
     private readonly fleetDependencies: Pick<
       FleetStartContract,
-      'agentService' | 'packageService' | 'packagePolicyService' | 'agentPolicyService'
+      | 'agentService'
+      | 'packageService'
+      | 'packagePolicyService'
+      | 'agentPolicyService'
+      | 'esIndexPatternService'
+      | 'createArtifactsClient'
     >,
     private savedObjectsStart: SavedObjectsServiceStart
   ) {}
@@ -36,6 +43,8 @@ export class EndpointFleetServicesFactory implements EndpointFleetServicesFactor
       packagePolicyService: packagePolicy,
       agentService,
       packageService,
+      esIndexPatternService,
+      createArtifactsClient,
     } = this.fleetDependencies;
 
     return {
@@ -43,6 +52,8 @@ export class EndpointFleetServicesFactory implements EndpointFleetServicesFactor
       agentPolicy,
       packages: packageService.asScoped(req),
       packagePolicy,
+      esIndexPatternService,
+      createArtifactsClient,
 
       asInternal: this.asInternalUser.bind(this),
     };
@@ -54,6 +65,8 @@ export class EndpointFleetServicesFactory implements EndpointFleetServicesFactor
       packagePolicyService: packagePolicy,
       agentService,
       packageService,
+      esIndexPatternService,
+      createArtifactsClient,
     } = this.fleetDependencies;
 
     return {
@@ -61,6 +74,8 @@ export class EndpointFleetServicesFactory implements EndpointFleetServicesFactor
       agentPolicy,
       packages: packageService.asInternalUser,
       packagePolicy,
+      esIndexPatternService,
+      createArtifactsClient,
 
       asScoped: this.asScoped.bind(this),
       internalReadonlySoClient: createInternalReadonlySoClient(this.savedObjectsStart),
@@ -76,6 +91,8 @@ export interface EndpointFleetServicesInterface {
   agentPolicy: AgentPolicyServiceInterface;
   packages: PackageClient;
   packagePolicy: PackagePolicyServiceInterface;
+  esIndexPatternService: ESIndexPatternService;
+  createArtifactsClient: (packageName: string) => FleetArtifactsClient;
 }
 
 export interface EndpointScopedFleetServicesInterface extends EndpointFleetServicesInterface {

@@ -12,6 +12,7 @@ import {
   findRulesSchema,
   FindRulesSchemaDecoded,
 } from '../../../../../common/detection_engine/schemas/request/find_rules_schema';
+import { EndpointAppContext } from '../../../../endpoint/types';
 import type { SecuritySolutionPluginRouter } from '../../../../types';
 import { DETECTION_ENGINE_RULES_URL } from '../../../../../common/constants';
 import { findRules } from '../../rules/find_rules';
@@ -25,7 +26,8 @@ import { legacyGetBulkRuleActionsSavedObject } from '../../rule_actions/legacy_g
 export const findRulesRoute = (
   router: SecuritySolutionPluginRouter,
   logger: Logger,
-  isRuleRegistryEnabled: boolean
+  isRuleRegistryEnabled: boolean,
+  endpointAppContext: EndpointAppContext
 ) => {
   router.get(
     {
@@ -41,6 +43,7 @@ export const findRulesRoute = (
     },
     async (context, request, response) => {
       const siemResponse = buildSiemResponse(response);
+      const fleetServices = endpointAppContext.service.getInternalFleetServices();
 
       const validationErrors = findRuleValidateTypeDependents(request.query);
       if (validationErrors.length) {

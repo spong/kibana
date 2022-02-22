@@ -5,16 +5,25 @@
  * 2.0.
  */
 
-import { EuiDescriptionList, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
+import {
+  EuiDescriptionList,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiIcon,
+  EuiButtonIcon,
+} from '@elastic/eui';
 import { isEmpty, chunk, get, pick, isNumber } from 'lodash/fp';
-import React, { memo, useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
+import { useQuery, useMutation } from 'react-query';
 import styled from 'styled-components';
 
 import { ThreatMapping, Threats, Type } from '@kbn/securitysolution-io-ts-alerting-types';
 import { DataViewBase, Filter, FilterStateStore } from '@kbn/es-query';
 import { FilterManager } from '../../../../../../../../src/plugins/data/public';
+import { useAppToasts } from '../../../../common/hooks/use_app_toasts';
 import { DEFAULT_TIMELINE_TITLE } from '../../../../timelines/components/timeline/translations';
-import { useKibana } from '../../../../common/lib/kibana';
+import { KibanaServices, useKibana } from '../../../../common/lib/kibana';
+import { Rule } from '../../../containers/detection_engine/rules';
 import { AboutStepRiskScore, AboutStepSeverity } from '../../../pages/detection_engine/rules/types';
 import { FieldValueTimeline } from '../pick_timeline';
 import { FormSchema } from '../../../../shared_imports';
@@ -42,10 +51,15 @@ const DescriptionListContainer = styled(EuiDescriptionList)`
   &.euiDescriptionList--column .euiDescriptionList__title {
     width: 30%;
   }
+
   &.euiDescriptionList--column .euiDescriptionList__description {
     width: 70%;
     overflow-wrap: anywhere;
   }
+`;
+
+const PackageNotInstalledEuiFlexItem = styled(EuiFlexItem)`
+  filter: grayscale(100%);
 `;
 
 interface StepRuleDescriptionProps<T> {
@@ -53,16 +67,133 @@ interface StepRuleDescriptionProps<T> {
   data: unknown;
   indexPatterns?: DataViewBase;
   schema: FormSchema<T>;
+  rule?: Rule;
 }
+
+export const useInstallPackage = (packageName: string, packageVersion: string) => {
+  const { addError } = useAppToasts();
+
+  return useQuery(
+    ['installingPackage', packageName, packageVersion],
+    async ({ signal }) => {
+      // POST /kbn/api/fleet/epm/packages/aws/1.11.0
+      //      /kbn/api/fleet/epm/package/aws/1.11.0
+      const url = `/api/fleet/epm/packages/${packageName}/${packageVersion}`;
+      const response = await KibanaServices.get().http.fetch(url, {
+        method: 'POST',
+        signal,
+      });
+      console.log('installResponse', response);
+      return response;
+    },
+    {
+      onError: (e) => {
+        addError(e, { title: 'Its real bad, sorry!' });
+      },
+    }
+  );
+};
 
 export const StepRuleDescriptionComponent = <T,>({
   data,
   columns = 'multi',
   indexPatterns,
   schema,
+  rule,
 }: StepRuleDescriptionProps<T>) => {
   const kibana = useKibana();
   const [filterManager] = useState<FilterManager>(new FilterManager(kibana.services.uiSettings));
+  const [installed, setInstalled] = useState(false);
+
+  const createPackage = useMutation(
+    ({ packageName, packageVersion }: { packageName: string; packageVersion: string }) => {
+      const url = `/api/fleet/epm/packages/${packageName}/${packageVersion}`;
+      return KibanaServices.get().http.fetch(url, {
+        method: 'POST',
+      });
+    },
+    {
+      onSuccess: (data, variables, context) => {
+        setInstalled(true);
+      },
+    }
+  );
+
+  const deletePackage = useMutation(
+    ({ packageName, packageVersion }: { packageName: string; packageVersion: string }) => {
+      // http://localhost:5601/kbn/api/fleet/epm/packages/aws/1.11.0
+      const url = `/api/fleet/epm/packages/${packageName}/${packageVersion}`;
+      return KibanaServices.get().http.fetch(url, {
+        method: 'DELETE',
+      });
+    },
+    {
+      onSuccess: (data, variables, context) => {
+        setInstalled(false);
+      },
+    }
+  );
+
+  const packageDetails = rule?.packageDetails ?? { policy_templates: [] };
+  const packageName = packageDetails?.name ?? 'emptyPackageName';
+  const packageInstalled = packageDetails?.installed ?? false;
+  const packageVersion = packageDetails?.version ?? 'emptyPackageVersion';
+
+  // const usePackage = useQuery(['fleetPackage', packageName, packageVersion], () => {
+  //   const url = `/api/fleet/epm/packages/${packageName}/${packageVersion}`;
+  //   return KibanaServices.get().http.fetch(url, {
+  //     method: 'GET',
+  //   });
+  // });
+
+  // console.log('whoah!', rule);
+  // console.log('columns!', columns);
+
+  const items = useMemo(() => {
+    return packageDetails?.policy_templates?.map((template, index) => {
+      const icon = template?.icons?.[0] ?? { title: template.title };
+      // kbn/api/fleet/epm/packages/aws/1.11.0/img/logo_cloudtrail.svg
+      const iconPath = icon.src
+        ? `/kbn/api/fleet/epm/packages/${packageName}/${packageVersion}${icon.src}`
+        : 'package';
+      return (
+        index < 5 &&
+        (installed ? (
+          <EuiFlexItem grow={false}>
+            <EuiButtonIcon
+              onClick={() => {
+                deletePackage.mutate({ packageName, packageVersion });
+              }}
+              iconType={iconPath}
+              display={'empty'}
+              size={'m'}
+              aria-label={icon.title}
+            />
+          </EuiFlexItem>
+        ) : (
+          <PackageNotInstalledEuiFlexItem grow={false}>
+            <EuiButtonIcon
+              onClick={() => {
+                createPackage.mutate({ packageName, packageVersion });
+              }}
+              iconType={iconPath}
+              display={'empty'}
+              size={'m'}
+              aria-label={icon.title}
+            />
+            {/* <EuiIcon type={iconPath} size="xl" title={icon.title} />*/}
+          </PackageNotInstalledEuiFlexItem>
+        ))
+      );
+    });
+  }, [
+    createPackage,
+    deletePackage,
+    installed,
+    packageDetails?.policy_templates,
+    packageName,
+    packageVersion,
+  ]);
 
   const keys = Object.keys(schema);
   const listItems = keys.reduce((acc: ListItems[], key: string) => {
@@ -102,20 +233,26 @@ export const StepRuleDescriptionComponent = <T,>({
     );
   }
 
+  const packageItems = [
+    { title: 'Supported Integrations', description: <EuiFlexGroup>{items}</EuiFlexGroup> },
+  ];
+
   return (
-    <EuiFlexGroup>
-      <EuiFlexItem data-test-subj="listItemColumnStepRuleDescription">
-        {columns === 'single' ? (
-          <EuiDescriptionList listItems={listItems} />
-        ) : (
-          <DescriptionListContainer
-            data-test-subj="singleSplitStepRuleDescriptionList"
-            type="column"
-            listItems={listItems}
-          />
-        )}
-      </EuiFlexItem>
-    </EuiFlexGroup>
+    <>
+      <EuiFlexGroup>
+        <EuiFlexItem data-test-subj="listItemColumnStepRuleDescription">
+          {columns === 'single' ? (
+            <EuiDescriptionList listItems={[...listItems, ...packageItems]} />
+          ) : (
+            <DescriptionListContainer
+              data-test-subj="singleSplitStepRuleDescriptionList"
+              type="column"
+              listItems={[...listItems, ...packageItems]}
+            />
+          )}
+        </EuiFlexItem>
+      </EuiFlexGroup>
+    </>
   );
 };
 

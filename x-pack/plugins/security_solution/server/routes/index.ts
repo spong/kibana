@@ -8,6 +8,7 @@
 import { StartServicesAccessor } from 'kibana/server';
 import { Logger } from 'src/core/server';
 import { IRuleDataClient, RuleDataPluginService } from '../../../rule_registry/server';
+import { EndpointAppContext } from '../endpoint/types';
 
 import { SecuritySolutionPluginRouter } from '../types';
 
@@ -85,17 +86,18 @@ export const initRoutes = (
   getStartServices: StartServicesAccessor<StartPlugins>,
   securityRuleTypeOptions: CreateSecurityRuleTypeWrapperProps,
   previewRuleDataClient: IRuleDataClient,
-  previewTelemetryReceiver: ITelemetryReceiver
+  previewTelemetryReceiver: ITelemetryReceiver,
+  endpointAppContext: EndpointAppContext
 ) => {
   const isRuleRegistryEnabled = ruleDataClient != null;
   // Detection Engine Rule routes that have the REST endpoints of /api/detection_engine/rules
   // All REST rule creation, deletion, updating, etc
   createRulesRoute(router, ml, isRuleRegistryEnabled);
-  readRulesRoute(router, logger, isRuleRegistryEnabled);
+  readRulesRoute(router, logger, isRuleRegistryEnabled, endpointAppContext);
   updateRulesRoute(router, ml, isRuleRegistryEnabled);
   patchRulesRoute(router, ml, isRuleRegistryEnabled);
   deleteRulesRoute(router, isRuleRegistryEnabled);
-  findRulesRoute(router, logger, isRuleRegistryEnabled);
+  findRulesRoute(router, logger, isRuleRegistryEnabled, endpointAppContext);
   previewRulesRoute(
     router,
     config,
@@ -110,7 +112,13 @@ export const initRoutes = (
   legacyCreateLegacyNotificationRoute(router, logger);
 
   addPrepackedRulesRoute(router);
-  getPrepackagedRulesStatusRoute(router, config, security, isRuleRegistryEnabled);
+  getPrepackagedRulesStatusRoute(
+    router,
+    config,
+    security,
+    isRuleRegistryEnabled,
+    endpointAppContext
+  );
   createRulesBulkRoute(router, ml, isRuleRegistryEnabled);
   updateRulesBulkRoute(router, ml, isRuleRegistryEnabled);
   patchRulesBulkRoute(router, ml, isRuleRegistryEnabled);

@@ -18,6 +18,7 @@ export class ESIndexPatternSavedObjectService implements ESIndexPatternService {
     datasetPath: string
   ): Promise<string | undefined> {
     const installation = await getInstallation({ savedObjectsClient, pkgName });
+    // console.log('installation', JSON.stringify(installation, null, 2));
     return installation?.es_index_patterns[datasetPath];
   }
 }

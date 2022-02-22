@@ -11,6 +11,7 @@ import {
   PrePackagedRulesAndTimelinesStatusSchema,
   prePackagedRulesAndTimelinesStatusSchema,
 } from '../../../../../common/detection_engine/schemas/response/prepackaged_rules_status_schema';
+import { EndpointAppContext } from '../../../../endpoint/types';
 import type { SecuritySolutionPluginRouter } from '../../../../types';
 import { DETECTION_ENGINE_PREPACKAGED_URL } from '../../../../../common/constants';
 import { buildSiemResponse } from '../utils';
@@ -33,7 +34,8 @@ export const getPrepackagedRulesStatusRoute = (
   router: SecuritySolutionPluginRouter,
   config: ConfigType,
   security: SetupPlugins['security'],
-  isRuleRegistryEnabled: boolean
+  isRuleRegistryEnabled: boolean,
+  endpointAppContext: EndpointAppContext
 ) => {
   router.get(
     {
@@ -45,6 +47,8 @@ export const getPrepackagedRulesStatusRoute = (
     },
     async (context, request, response) => {
       const siemResponse = buildSiemResponse(response);
+      const fleetServices = endpointAppContext.service.getInternalFleetServices();
+
       const savedObjectsClient = context.core.savedObjects.client;
       const rulesClient = context.alerting.getRulesClient();
       const ruleAssetsClient = ruleAssetSavedObjectsClientFactory(savedObjectsClient);

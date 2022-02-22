@@ -52,7 +52,12 @@ export interface EndpointAppContextServiceSetupContract {
 export type EndpointAppContextServiceStartContract = Partial<
   Pick<
     FleetStartContract,
-    'agentService' | 'packageService' | 'packagePolicyService' | 'agentPolicyService'
+    | 'agentService'
+    | 'packageService'
+    | 'packagePolicyService'
+    | 'agentPolicyService'
+    | 'esIndexPatternService'
+    | 'createArtifactsClient'
   >
 > & {
   fleetAuthzService?: FleetStartContract['authz'];

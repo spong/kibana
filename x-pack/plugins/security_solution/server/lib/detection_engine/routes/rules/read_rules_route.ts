@@ -12,6 +12,7 @@ import {
   queryRulesSchema,
   QueryRulesSchemaDecoded,
 } from '../../../../../common/detection_engine/schemas/request/query_rules_schema';
+import { EndpointAppContext } from '../../../../endpoint/types';
 import { buildRouteValidation } from '../../../../utils/build_validation/route_validation';
 import type { SecuritySolutionPluginRouter } from '../../../../types';
 import { DETECTION_ENGINE_RULES_URL } from '../../../../../common/constants';
@@ -25,7 +26,8 @@ import { legacyGetRuleActionsSavedObject } from '../../rule_actions/legacy_get_r
 export const readRulesRoute = (
   router: SecuritySolutionPluginRouter,
   logger: Logger,
-  isRuleRegistryEnabled: boolean
+  isRuleRegistryEnabled: boolean,
+  endpointAppContext: EndpointAppContext
 ) => {
   router.get(
     {
@@ -41,6 +43,7 @@ export const readRulesRoute = (
     },
     async (context, request, response) => {
       const siemResponse = buildSiemResponse(response);
+      const fleetServices = endpointAppContext.service.getInternalFleetServices();
       const validationErrors = queryRuleValidateTypeDependents(request.query);
       if (validationErrors.length) {
         return siemResponse.error({ statusCode: 400, body: validationErrors });
@@ -68,12 +71,40 @@ export const readRulesRoute = (
 
           const ruleExecutionSummary = await ruleExecutionLog.getExecutionSummary(rule.id);
 
-          const transformed = transform(
-            rule,
-            ruleExecutionSummary,
-            isRuleRegistryEnabled,
-            legacyRuleActions
-          );
+          // Indices
+          // ['filebeat-*', 'logs-aws*']
+          const indices = rule.params?.index! ?? [];
+          console.log('indices', indices);
+
+          // Query
+          // event.dataset:aws.cloudtrail and
+          // event.provider:iam.amazonaws.com and
+          // event.action:AddUserToGroup and
+          // event.outcome:success
+
+          // Fleet service discover
+          // esIndexPatternService
+          const fleetIndices = await endpointAppContext.service
+            .getInternalFleetServices()
+            .esIndexPatternService.getESIndexPattern(savedObjectsClient, 'aws', '');
+          console.log('fleetIndices', fleetIndices);
+
+          // packageService
+          const packageService = await endpointAppContext.service.getInternalFleetServices()
+            .packages;
+          const packageServiceLatestPackage = await packageService.fetchFindLatestPackage('aws');
+          const packageServiceInstallation = await packageService.getInstallation('aws');
+          // packagePolicyService
+          const packagePolicyService = await endpointAppContext.service.getInternalFleetServices()
+            .packagePolicy;
+
+          const transformed = {
+            ...transform(rule, ruleExecutionSummary, isRuleRegistryEnabled, legacyRuleActions),
+            packageDetails: {
+              ...packageServiceLatestPackage,
+              installed: packageServiceInstallation?.install_status === 'installed',
+            }, // Here comes the package! Weeee!
+          };
           if (transformed == null) {
             return siemResponse.error({ statusCode: 500, body: 'Internal error transforming' });
           } else {
