@@ -376,6 +376,7 @@ const AssistantComponent: React.FC<Props> = ({
                       clearConversation(selectedConversationId);
                       setSelectedSystemPromptId(getDefaultSystemPrompt().id);
                       setSelectedPromptContextIds([]);
+                      setSuggestedUserPrompt('');
                     }}
                   />
                 </EuiToolTip>
