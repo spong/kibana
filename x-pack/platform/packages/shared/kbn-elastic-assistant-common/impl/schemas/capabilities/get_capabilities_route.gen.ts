@@ -21,4 +21,5 @@ export const GetCapabilitiesResponse = z.object({
   assistantModelEvaluation: z.boolean(),
   defendInsights: z.boolean(),
   assistantAttackDiscoverySchedulingEnabled: z.boolean(),
+  assistantWorkflowGenerationEnabled: z.boolean(),
 });

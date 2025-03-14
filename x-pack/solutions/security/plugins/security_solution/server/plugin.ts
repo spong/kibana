@@ -603,6 +603,8 @@ export class Plugin implements ISecuritySolutionPlugin {
       assistantModelEvaluation: config.experimentalFeatures.assistantModelEvaluation,
       assistantAttackDiscoverySchedulingEnabled:
         config.experimentalFeatures.assistantAttackDiscoverySchedulingEnabled,
+      assistantWorkflowGenerationEnabled:
+        config.experimentalFeatures.assistantWorkflowGenerationEnabled,
     };
     plugins.elasticAssistant.registerFeatures(APP_UI_ID, features);
     plugins.elasticAssistant.registerFeatures('management', features);

@@ -60,3 +60,6 @@ export * from './knowledge_base/entries/find_knowledge_base_entries_route.gen';
 
 export * from './prompts/find_prompts_route.gen';
 export { PromptResponse, PromptTypeEnum } from './prompts/bulk_crud_prompts_route.gen';
+
+// Workflow Generation Schemas
+export * from './workflow_generation/crud_workflow_generation_route.gen';

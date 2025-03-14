@@ -143,6 +143,7 @@ export const APP_RESPONSE_ACTIONS_HISTORY_PATH =
 export const NOTES_PATH = `${MANAGEMENT_PATH}/notes` as const;
 export const SIEM_MIGRATIONS_PATH = '/siem_migrations' as const;
 export const SIEM_MIGRATIONS_RULES_PATH = `${SIEM_MIGRATIONS_PATH}/rules` as const;
+export const WORKFLOW_GENERATION_PATH = `/workflow_generation` as const;
 
 // cloud logs to exclude from default index pattern
 export const EXCLUDE_ELASTIC_CLOUD_INDICES = ['-*elastic-cloud-logs-*'];

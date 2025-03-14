@@ -120,6 +120,11 @@ export const allowedExperimentalValues = Object.freeze({
   assistantAttackDiscoverySchedulingEnabled: false,
 
   /**
+   * Enables the Assistant Workflow Generation functionality and API endpoint.
+   */
+  assistantWorkflowGenerationEnabled: false,
+
+  /**
    * Enables the Managed User section inside the new user details flyout.
    */
   newUserDetailsFlyoutManagedUser: false,

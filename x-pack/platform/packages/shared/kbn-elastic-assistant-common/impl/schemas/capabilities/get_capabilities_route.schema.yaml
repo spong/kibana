@@ -26,10 +26,13 @@ paths:
                     type: boolean
                   assistantAttackDiscoverySchedulingEnabled:
                     type: boolean
+                  assistantWorkflowGenerationEnabled:
+                    type: boolean
                 required:
                   - assistantModelEvaluation
                   - defendInsights
                   - assistantAttackDiscoverySchedulingEnabled
+                  - assistantWorkflowGenerationEnabled
         '400':
           description: Generic Error
           content:

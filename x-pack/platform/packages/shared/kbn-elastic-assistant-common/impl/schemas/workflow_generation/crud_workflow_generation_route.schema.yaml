@@ -1,0 +1,214 @@
+openapi: 3.0.0
+info:
+  title: Security AI Assistant Workflow Generation API
+  version: '1'
+paths:
+  /api/security_ai_assistant/workflow_generation/execute:
+    post:
+      x-codegen-enabled: true
+      x-labels: [ess, serverless]
+      operationId: ExecuteWorkflow
+      description: Execute a workflow with the given workflowId and list of actionIds.
+      summary: Execute a workflow
+      tags:
+        - Workflow Generation API
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - workflowId
+                - actionIds
+              properties:
+                workflowId:
+                  type: string
+                  description: The ID of the workflow to execute.
+                actionIds:
+                  type: array
+                  items:
+                    type: string
+                  description: List of action IDs to execute within the workflow.
+      responses:
+        200:
+          description: Indicates a successful execution.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        400:
+          description: Generic Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                  error:
+                    type: string
+                  message:
+                    type: string
+
+  /api/security_ai_assistant/workflow_generation/generate:
+    post:
+      x-codegen-enabled: true
+      x-labels: [ ess, serverless ]
+      operationId: GenerateWorkflow
+      description: Generate a workflow based on a prompt and list of actionIds.
+      summary: Generate a workflow
+      tags:
+        - Workflow Generation API
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                  - prompt
+              properties:
+                prompt:
+                  type: string
+                  description: The prompt to generate the workflow.
+                actionIds:
+                  type: array
+                  items:
+                    type: string
+                  description: List of action IDs to include in the generated workflow.
+                  default: []
+      responses:
+        200:
+          description: Indicates a successful generation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  workflowId:
+                    type: string
+                  message:
+                    type: string
+        400:
+          description: Generic Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                  error:
+                    type: string
+                  message:
+                    type: string
+
+  /api/security_ai_assistant/workflow_generation/action:
+    post:
+      x-codegen-enabled: true
+      x-labels: [ ess, serverless ]
+      operationId: CreateAction
+      description: Create a new action with the given name, url, apiKey, and optional OpenAPI spec.
+      summary: Create an action
+      tags:
+        - Workflow Generation API
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - url
+                - apiKey
+              properties:
+                name:
+                  type: string
+                  description: The name of the action.
+                url:
+                  type: string
+                  description: The URL of the action.
+                apiKey:
+                  type: string
+                  description: The API key for the action.
+                openApiSpec:
+                  type: string
+                  description: Optional OpenAPI specification for the action.
+      responses:
+        200:
+          description: Indicates a successful creation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  actionId:
+                    type: string
+                  message:
+                    type: string
+        400:
+          description: Generic Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                  error:
+                    type: string
+                  message:
+                    type: string
+    get:
+      x-codegen-enabled: true
+      x-labels: [ ess, serverless ]
+      operationId: GetActions
+      description: Retrieve all actions.
+      summary: Get all actions
+      tags:
+        - Workflow Generation API
+      responses:
+        200:
+          description: List of actions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    actionId:
+                      type: string
+                    name:
+                      type: string
+                    url:
+                      type: string
+                    apiKey:
+                      type: string
+                    openApiSpec:
+                      type: string
+                      nullable: true
+        400:
+          description: Generic Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: number
+                  error:
+                    type: string
+                  message:
+                    type: string

@@ -190,3 +190,10 @@ export const PROTECTION_UPDATES = i18n.translate(
 export const CREATE_NEW_RULE = i18n.translate('xpack.securitySolution.navigation.newRuleTitle', {
   defaultMessage: 'Create new rule',
 });
+
+export const WORKFLOW_GENERATION = i18n.translate(
+  'xpack.securitySolution.navigation.workflowGeneration',
+  {
+    defaultMessage: 'Workflow Generation',
+  }
+);

@@ -24,3 +24,9 @@ export { postKnowledgeBaseRoute } from './knowledge_base/post_knowledge_base';
 
 // Evaluate
 export { postEvaluateRoute } from './evaluate/post_evaluate';
+
+// Workflow Generation
+export { postWorkflowGenerateRoute } from './workflow_generation/post_workflow_generate_route';
+export { postWorkflowExecuteRoute } from './workflow_generation/post_workflow_execute_route';
+export { postWorkflowActionRoute } from './workflow_generation/post_workflow_action_route';
+export { getWorkflowActionsRoute } from './workflow_generation/get_workflow_actions_route';

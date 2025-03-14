@@ -41,6 +41,10 @@ import {
 import { deleteKnowledgeBaseEntryRoute } from './knowledge_base/entries/delete_route';
 import { updateKnowledgeBaseEntryRoute } from './knowledge_base/entries/update_route';
 import { getKnowledgeBaseEntryRoute } from './knowledge_base/entries/get_route';
+import { postWorkflowGenerateRoute } from './workflow_generation/post_workflow_generate_route';
+import { postWorkflowExecuteRoute } from './workflow_generation/post_workflow_execute_route';
+import { postWorkflowActionRoute } from './workflow_generation/post_workflow_action_route';
+import { getWorkflowActionsRoute } from './workflow_generation/get_workflow_actions_route';
 
 export const registerRoutes = (
   router: ElasticAssistantPluginRouter,
@@ -105,4 +109,10 @@ export const registerRoutes = (
   getDefendInsightRoute(router);
   getDefendInsightsRoute(router);
   postDefendInsightsRoute(router);
+
+  // Workflow Generation
+  postWorkflowGenerateRoute(router);
+  postWorkflowExecuteRoute(router);
+  postWorkflowActionRoute(router);
+  getWorkflowActionsRoute(router);
 };

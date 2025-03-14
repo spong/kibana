@@ -95,6 +95,7 @@ import type { OnboardingService } from './onboarding/service';
 import type { SolutionNavigation } from './app/solution_navigation/solution_navigation';
 import type { TelemetryServiceStart } from './common/lib/telemetry';
 import type { SiemMigrationsService } from './siem_migrations/service';
+import type { WorkflowGeneration } from './workflow_generation';
 
 export interface SetupPlugins {
   cloud?: CloudSetup;
@@ -248,6 +249,7 @@ export interface SubPlugins {
   investigations: Investigations;
   machineLearning: MachineLearning;
   siemMigrations: SiemMigrations;
+  workflowGeneration: WorkflowGeneration;
 }
 
 // TODO: find a better way to defined these types
@@ -271,4 +273,5 @@ export interface StartedSubPlugins {
   investigations: ReturnType<Investigations['start']>;
   machineLearning: ReturnType<MachineLearning['start']>;
   siemMigrations: ReturnType<SiemMigrations['start']>;
+  workflowGeneration: ReturnType<WorkflowGeneration['start']>;
 }

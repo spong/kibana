@@ -20,6 +20,7 @@ import { onboardingLinks } from './onboarding/links';
 import { findingsLinks } from './cloud_security_posture/links';
 import type { StartPlugins } from './types';
 import { dashboardsLinks } from './dashboards/links';
+import { workflowGenerationLinks } from './workflow_generation/links';
 
 // TODO: remove after rollout https://github.com/elastic/kibana/issues/179572
 export { solutionAppLinksSwitcher } from './app/solution_navigation/links/app_links';
@@ -28,6 +29,7 @@ export const appLinks: AppLinkItems = Object.freeze([
   dashboardsLinks,
   alertsLinks,
   attackDiscoveryLinks,
+  workflowGenerationLinks,
   findingsLinks,
   casesLinks,
   timelinesLinks,
@@ -49,6 +51,7 @@ export const getFilteredLinks = async (
     dashboardsLinks,
     alertsLinks,
     attackDiscoveryLinks,
+    workflowGenerationLinks,
     findingsLinks,
     casesLinks,
     timelinesLinks,
