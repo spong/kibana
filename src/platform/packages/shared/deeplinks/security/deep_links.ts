@@ -85,5 +85,6 @@ export enum SecurityPageName {
   entityAnalyticsEntityStoreManagement = 'entity_analytics-entity_store_management',
   coverageOverview = 'coverage-overview',
   notes = 'notes',
+  alertSummary = 'alert_summary',
   workflowGeneration = 'workflow_generation',
 }
