@@ -132,8 +132,10 @@ export const callAssistantGraph: AgentExecutor<true | false> = async ({
   const newMessages = langChainMessages.slice(-1); // this is the message that was just added
 
   // Check if KB is available (not feature flag related)
+  // TODO Use configured inferenceIdOverride so CI doesn't use elser
   const isEnabledKnowledgeBase =
     (await dataClients?.kbDataClient?.isInferenceEndpointExists()) ?? false;
+  console.log('isEnabledKnowledgeBase', isEnabledKnowledgeBase);
 
   // Fetch any applicable tools that the source plugin may have registered
   const assistantToolParams: AssistantToolParams = {

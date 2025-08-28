@@ -13,7 +13,6 @@ import {
   EuiFlexItem,
   EuiInMemoryTable,
   EuiLink,
-  EuiLoadingSpinner,
   EuiPanel,
   EuiSpacer,
   EuiText,
@@ -46,7 +45,6 @@ import { Flyout } from '../../assistant/common/components/assistant_settings_man
 import { useFlyoutModalVisibility } from '../../assistant/common/components/assistant_settings_management/flyout/use_flyout_modal_visibility';
 import { IndexEntryEditor } from './index_entry_editor';
 import { DocumentEntryEditor } from './document_entry_editor';
-import { SetupKnowledgeBaseButton } from '../setup_knowledge_base_button';
 import { useDeleteKnowledgeBaseEntries } from '../../assistant/api/knowledge_base/entries/use_delete_knowledge_base_entries';
 import {
   isSystemEntry,
@@ -58,10 +56,7 @@ import { useCreateKnowledgeBaseEntry } from '../../assistant/api/knowledge_base/
 import { useUpdateKnowledgeBaseEntries } from '../../assistant/api/knowledge_base/entries/use_update_knowledge_base_entries';
 import { DELETE, SETTINGS_UPDATED_TOAST_TITLE } from '../../assistant/settings/translations';
 import type { KnowledgeBaseConfig } from '../../assistant/types';
-import {
-  isKnowledgeBaseSetup,
-  useKnowledgeBaseStatus,
-} from '../../assistant/api/knowledge_base/use_knowledge_base_status';
+import { useKnowledgeBaseStatus } from '../../assistant/api/knowledge_base/use_knowledge_base_status';
 import { CANCEL_BUTTON_TEXT } from '../../assistant/assistant_header/translations';
 
 interface Params {
@@ -81,11 +76,10 @@ export const KnowledgeBaseSettingsManagement: React.FC<Params> = React.memo(({ d
     toasts,
   } = useAssistantContext();
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
-  const { data: kbStatus, isFetched } = useKnowledgeBaseStatus({
+  const { data: kbStatus } = useKnowledgeBaseStatus({
     http,
     enabled: isAssistantEnabled,
   });
-  const isKbSetup = isKnowledgeBaseSetup(kbStatus);
   const [searchParams] = useSearchParams();
   const initialSearchTerm = useMemo(
     () => (searchParams.get('entry_search_term') as string) ?? undefined,
@@ -361,35 +355,13 @@ export const KnowledgeBaseSettingsManagement: React.FC<Params> = React.memo(({ d
         <EuiSpacer size="l" />
         <EuiFlexGroup justifyContent="spaceAround">
           <EuiFlexItem grow={false}>
-            {!isFetched ? (
-              <EuiLoadingSpinner data-test-subj="spinning" size="l" />
-            ) : isKbSetup ? (
-              <EuiInMemoryTable
-                data-test-subj="knowledge-base-entries-table"
-                columns={columns}
-                items={entries.data ?? []}
-                search={search}
-                sorting={sorting}
-              />
-            ) : (
-              <>
-                <EuiSpacer size="l" />
-                <EuiText size={'m'}>
-                  <FormattedMessage
-                    id="xpack.elasticAssistant.assistant.settings.knowledgeBasedSettingManagements.knowledgeBaseSetupDescription"
-                    defaultMessage="Setup to get started with the Knowledge Base."
-                  />
-                </EuiText>
-
-                <EuiSpacer size="s" />
-                <EuiFlexGroup justifyContent="spaceAround">
-                  <EuiFlexItem grow={false}>
-                    <SetupKnowledgeBaseButton />
-                  </EuiFlexItem>
-                </EuiFlexGroup>
-                <EuiSpacer size="l" />
-              </>
-            )}
+            <EuiInMemoryTable
+              data-test-subj="knowledge-base-entries-table"
+              columns={columns}
+              items={entries.data ?? []}
+              search={search}
+              sorting={sorting}
+            />
           </EuiFlexItem>
         </EuiFlexGroup>
       </EuiPanel>

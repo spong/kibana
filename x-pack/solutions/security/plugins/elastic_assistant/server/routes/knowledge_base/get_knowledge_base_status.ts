@@ -10,15 +10,13 @@ import { transformError } from '@kbn/securitysolution-es-utils';
 import {
   API_VERSIONS,
   ELASTIC_AI_ASSISTANT_KNOWLEDGE_BASE_URL,
-  ReadKnowledgeBaseRequestParams,
 } from '@kbn/elastic-assistant-common';
-import { buildRouteValidationWithZod } from '@kbn/elastic-assistant-common/impl/schemas/common';
 import type { KibanaRequest } from '@kbn/core/server';
 import { buildResponse } from '../../lib/build_response';
 import type { ElasticAssistantPluginRouter } from '../../types';
 
 /**
- * Get the status of the Knowledge Base index, pipeline, and resources (collection of documents)
+ * Get the status of the Knowledge Base index, and resources (collection of documents)
  *
  * @param router IRouter for registering routes
  */
@@ -37,12 +35,10 @@ export const getKnowledgeBaseStatusRoute = (router: ElasticAssistantPluginRouter
       {
         version: API_VERSIONS.public.v1,
         validate: {
-          request: {
-            params: buildRouteValidationWithZod(ReadKnowledgeBaseRequestParams),
-          },
+          request: {},
         },
       },
-      async (context, request: KibanaRequest<ReadKnowledgeBaseRequestParams>, response) => {
+      async (context, request: KibanaRequest, response) => {
         const resp = buildResponse(response);
         const ctx = await context.resolve(['core', 'elasticAssistant', 'licensing']);
         const assistantContext = ctx.elasticAssistant;

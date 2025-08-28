@@ -31,7 +31,7 @@ export const AlertsSettingsManagement: React.FC<Props> = React.memo(
         <EuiSpacer size="m" />
         <EuiText size="m">
           <span>
-            {i18n.LATEST_AND_RISKIEST_OPEN_ALERTS(knowledgeBase.latestAlerts)}
+            {i18n.LATEST_AND_RISKIEST_OPEN_ALERTS(knowledgeBase.latestAlerts)}{' '}
             {i18n.YOUR_ANONYMIZATION_SETTINGS}
           </span>
         </EuiText>

@@ -89,7 +89,6 @@ export interface KnowledgeBaseDataClientParams extends AIAssistantDataClientPara
   getElserId: GetElser;
   getIsKBSetupInProgress: (spaceId: string) => boolean;
   getProductDocumentationStatus: () => Promise<InstallationStatus>;
-  ingestPipelineResourceName: string;
   setIsKBSetupInProgress: (spaceId: string, isInProgress: boolean) => void;
   manageGlobalKnowledgeBaseAIAssistant: boolean;
   getTrainedModelsProvider: () => ReturnType<TrainedModelsProvider['trainedModelsProvider']>;
@@ -319,9 +318,15 @@ export class AIAssistantKnowledgeBaseDataClient extends AIAssistantDataClient {
 
           this.options.logger.debug(`Loading Security Labs KB docs...`);
 
-          void loadSecurityLabs(this, this.options.logger)?.then(() => {
-            this.options.setIsKBSetupInProgress(this.spaceId, false);
-          });
+          void loadSecurityLabs(this, this.options.logger)
+            .then(() => {
+              this.options.setIsKBSetupInProgress(this.spaceId, false);
+            })
+            .catch((e) => {
+              this.options.logger.error(
+                `Failed to install Security Labs docs with inference ID: ${elserId}. Error: ${e.message}`
+              );
+            });
         } else {
           this.options.logger.debug(`Security Labs Knowledge Base docs already loaded!`);
         }
@@ -584,6 +589,7 @@ export class AIAssistantKnowledgeBaseDataClient extends AIAssistantDataClient {
 
     try {
       const userFilter = getKBUserFilter(user);
+      // TODO wrong type
       const results = await this.findDocuments<EsIndexEntry>({
         // Note: This is a magic number to set some upward bound as to not blow the context with too
         // many historical KB entries. Ideally we'd query for all and token trim.
@@ -874,6 +880,7 @@ export const isInferenceEndpointExists = async ({
       inference_id: inferenceId,
       task_type: 'sparse_embedding',
     });
+    console.log('inferenceIdresponse', response);
 
     if (!response.endpoints?.[0]?.service_settings?.model_id) {
       return false;
@@ -887,6 +894,8 @@ export const isInferenceEndpointExists = async ({
     } catch (e) {
       return false;
     }
+
+    console.log('getResponse', getResponse);
 
     // For standardized way of checking deployment status see: https://github.com/elastic/elasticsearch/issues/106986
     const isReadyESS = (stats: MlTrainedModelStats) =>

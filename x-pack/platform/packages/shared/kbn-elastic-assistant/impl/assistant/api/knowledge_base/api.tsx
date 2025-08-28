@@ -6,10 +6,9 @@
  */
 
 import type {
-  CreateKnowledgeBaseRequestParams,
-  CreateKnowledgeBaseResponse,
-  ReadKnowledgeBaseRequestParams,
-  ReadKnowledgeBaseResponse,
+  KnowledgeBaseStatusResponse,
+  KnowledgeBaseSetupRequestQueryInput,
+  KnowledgeBaseSetupResponse,
 } from '@kbn/elastic-assistant-common';
 import {
   API_VERSIONS,
@@ -18,61 +17,57 @@ import {
 import type { HttpSetup, IHttpFetchError } from '@kbn/core-http-browser';
 
 /**
- * API call for getting the status of the Knowledge Base. Provide
- * a resource to include the status of that specific resource.
+ * API call for getting the status of the Knowledge Base.
  *
  * @param {Object} options - The options object.
  * @param {HttpSetup} options.http - HttpSetup
- * @param {string} [options.resource] - Resource to get the status of, otherwise status of overall KB
  * @param {AbortSignal} [options.signal] - AbortSignal
  *
- * @returns {Promise<ReadKnowledgeBaseResponse | IHttpFetchError>}
+ * @returns {Promise<KnowledgeBaseStatusResponse | IHttpFetchError>}
  */
 export const getKnowledgeBaseStatus = async ({
   http,
-  resource,
   signal,
-}: ReadKnowledgeBaseRequestParams & { http: HttpSetup; signal?: AbortSignal | undefined }): Promise<
-  ReadKnowledgeBaseResponse | IHttpFetchError
-> => {
+}: {
+  http: HttpSetup;
+  signal?: AbortSignal | undefined;
+}): Promise<KnowledgeBaseStatusResponse | IHttpFetchError> => {
   try {
-    const path = ELASTIC_AI_ASSISTANT_KNOWLEDGE_BASE_URL.replace('{resource?}', resource || '');
-    const response = await http.fetch(path, {
+    const response = await http.fetch(ELASTIC_AI_ASSISTANT_KNOWLEDGE_BASE_URL, {
       method: 'GET',
       signal,
       version: API_VERSIONS.public.v1,
     });
-
-    return response as ReadKnowledgeBaseResponse;
+    return response as KnowledgeBaseStatusResponse;
   } catch (error) {
     return error as IHttpFetchError;
   }
 };
 
 /**
- * API call for setting up the Knowledge Base. Provide a resource to set up a specific resource.
+ * API call for setting up the Knowledge Base.
  *
  * @param {Object} options - The options object.
  * @param {HttpSetup} options.http - HttpSetup
- * @param {string} [options.resource] - Resource to be added to the KB, otherwise sets up the base KB
+ * @param {KnowledgeBaseSetupRequestQueryInput} [options.query] - Query params for setup
  * @param {AbortSignal} [options.signal] - AbortSignal
  *
- * @returns {Promise<CreateKnowledgeBaseResponse>}
+ * @returns {Promise<KnowledgeBaseSetupResponse>}
  */
 export const postKnowledgeBase = async ({
   http,
-  resource,
+  query,
   signal,
-}: CreateKnowledgeBaseRequestParams & {
+}: {
   http: HttpSetup;
+  query?: KnowledgeBaseSetupRequestQueryInput;
   signal?: AbortSignal | undefined;
-}): Promise<CreateKnowledgeBaseResponse> => {
-  const path = ELASTIC_AI_ASSISTANT_KNOWLEDGE_BASE_URL.replace('{resource?}', resource || '');
-  const response = await http.fetch(path, {
+}): Promise<KnowledgeBaseSetupResponse> => {
+  const response = await http.fetch(ELASTIC_AI_ASSISTANT_KNOWLEDGE_BASE_URL, {
     method: 'POST',
+    query,
     signal,
     version: API_VERSIONS.public.v1,
   });
-
-  return response as CreateKnowledgeBaseResponse;
+  return response as KnowledgeBaseSetupResponse;
 };

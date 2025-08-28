@@ -48,7 +48,7 @@ describe('useKnowledgeBaseStatus', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
-  it('should call api to get knowledge base status without resource arg', async () => {
+  it('should call api to get knowledge base status', async () => {
     renderHook(() => useKnowledgeBaseStatus(defaultProps));
     await waitFor(() => {
       expect(defaultProps.http.fetch).toHaveBeenCalledWith(
@@ -62,20 +62,6 @@ describe('useKnowledgeBaseStatus', () => {
       expect(toasts.addError).not.toHaveBeenCalled();
     });
   });
-  it('should call api to get knowledge base status with resource arg', async () => {
-    renderHook(() => useKnowledgeBaseStatus({ ...defaultProps, resource: 'something' }));
-    await waitFor(() =>
-      expect(defaultProps.http.fetch).toHaveBeenCalledWith(
-        '/api/security_ai_assistant/knowledge_base/something',
-        {
-          method: 'GET',
-          signal: undefined,
-          version: API_VERSIONS.public.v1,
-        }
-      )
-    );
-  });
-
   it('should return status response', async () => {
     const { result } = renderHook(() => useKnowledgeBaseStatus(defaultProps));
     await waitFor(() => expect(result.current).resolves.toStrictEqual(statusResponse));

@@ -1,31 +1,34 @@
 openapi: 3.0.0
 info:
-  title: KnowledgeBase API endpoints
+  title: Knowledge Base Setup and Status API endpoints
   version: '2023-10-31'
 paths:
-  /api/security_ai_assistant/knowledge_base/{resource}:
+  /api/security_ai_assistant/knowledge_base:
     post:
       x-codegen-enabled: true
       x-labels: [ess, serverless]
-      operationId: CreateKnowledgeBase
-      summary: Create a KnowledgeBase
-      description: Create a KnowledgeBase
+      operationId: KnowledgeBaseSetup
+      summary: Setup the Knowledge Base
+      description: Setup the Knowledge Base
       tags:
-        - KnowledgeBase API
+        - Knowledge Base API
       parameters:
-        - name: resource
-          in: path
-          description: The KnowledgeBase `resource` value.
-          schema:
-            type: string
-          example: "kb12345"
         - name: modelId
           in: query
-          description: ELSER modelId to use when setting up the Knowledge Base. If not provided, a default model will be used.
+          description: |
+            (Deprecated) ELSER modelId to use when setting up the Knowledge Base. Use `inferenceId` instead. If not provided, a default model will be used.
           required: false
           schema:
             type: string
           example: "elser-model-001"
+          deprecated: true
+        - name: inferenceId
+          in: query
+          description: Inference ID to use when setting up the Knowledge Base. If not provided, a default will be used.
+          required: false
+          schema:
+            type: string
+          example: ".elser-2-elasticsearch"
         - name: ignoreSecurityLabs
           in: query
           description: Indicates whether we should or should not install Security Labs docs when setting up the Knowledge Base. Defaults to `false`.
@@ -63,18 +66,11 @@ paths:
     get:
       x-codegen-enabled: true
       x-labels: [ess, serverless]
-      operationId: ReadKnowledgeBase
-      description: Read a single KB
-      summary: Read a KnowledgeBase
+      operationId: KnowledgeBaseStatus
+      description: Get the status of the Knowledge Base
+      summary: Get the status of the Knowledge Base
       tags:
         - KnowledgeBase API
-      parameters:
-        - name: resource
-          in: path
-          description: The KnowledgeBase `resource` value.
-          schema:
-            type: string
-          example: "kb12345"
       responses:
         200:
           description: Indicates a successful call.
@@ -85,11 +81,16 @@ paths:
                 properties:
                   elser_exists:
                     type: boolean
-                    description: Indicates if the ELSER model exists for the KnowledgeBase.
+                    description: (Deprecated) Indicates if the ELSER model exists for the Knowledge Base. See inference_endpoint_exists instead.
+                    example: true
+                    deprecated: true
+                  inference_endpoint_exists:
+                    type: boolean
+                    description: Indicates if the Inference Endpoint is available for the Knowledge Base.
                     example: true
                   is_setup_available:
                     type: boolean
-                    description: Indicates if the setup process is available for the KnowledgeBase.
+                    description: Indicates if the setup process is available for the Knowledge Base.
                     example: true
                   is_setup_in_progress:
                     type: boolean
@@ -97,15 +98,15 @@ paths:
                     example: false
                   security_labs_exists:
                     type: boolean
-                    description: Indicates if Security Labs documentation exists in the KnowledgeBase.
+                    description: Indicates if Security Labs documentation exists in the Knowledge Base.
                     example: true
                   user_data_exists:
                     type: boolean
-                    description: Indicates if user data exists in the KnowledgeBase.
+                    description: Indicates if user data exists in the Knowledge Base.
                     example: false
                   product_documentation_status:
                     type: string
-                    description: The status of the product documentation in the KnowledgeBase.
+                    description: The status of the product documentation in the Knowledge Base.
                     example: "complete"
         400:
           description: Generic Error

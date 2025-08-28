@@ -67,7 +67,6 @@ describe('AIAssistantKnowledgeBaseDataClient', () => {
       elserInferenceId: ASSISTANT_ELSER_INFERENCE_ID,
       getIsKBSetupInProgress: mockGetIsKBSetupInProgress.mockReturnValue(false),
       getProductDocumentationStatus: jest.fn().mockResolvedValue('installed'),
-      ingestPipelineResourceName: 'something',
       setIsKBSetupInProgress: jest.fn().mockImplementation(() => {}),
       manageGlobalKnowledgeBaseAIAssistant: true,
       getTrainedModelsProvider: () => trainedModelsProviderMock,

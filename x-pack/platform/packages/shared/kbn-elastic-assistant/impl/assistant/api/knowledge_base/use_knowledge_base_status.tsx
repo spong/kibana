@@ -11,7 +11,7 @@ import type { HttpSetup, IHttpFetchError, ResponseErrorBody } from '@kbn/core-ht
 import type { IToasts } from '@kbn/core-notifications-browser';
 import { i18n } from '@kbn/i18n';
 import { useCallback } from 'react';
-import type { ReadKnowledgeBaseResponse } from '@kbn/elastic-assistant-common';
+import type { KnowledgeBaseStatusResponse } from '@kbn/elastic-assistant-common/impl/schemas/knowledge_base/crud_kb_route.gen';
 import type { InstallationStatus } from '@kbn/product-doc-base-plugin/common/install_status';
 import { getKnowledgeBaseStatus } from './api';
 
@@ -19,14 +19,12 @@ const KNOWLEDGE_BASE_STATUS_QUERY_KEY = ['elastic-assistant', 'knowledge-base-st
 
 export interface UseKnowledgeBaseStatusParams {
   http: HttpSetup;
-  resource?: string;
   toasts?: IToasts;
   enabled: boolean;
 }
 
 /**
- * Hook for getting the status of the Knowledge Base. Provide a resource name to include
- * the status for that specific resource within the KB.
+ * Hook for getting the status of the Knowledge Base.
  *
  * @param {Object} options - The options object.
  * @param {HttpSetup} options.http - HttpSetup
@@ -36,17 +34,16 @@ export interface UseKnowledgeBaseStatusParams {
  */
 export const useKnowledgeBaseStatus = ({
   http,
-  resource,
   toasts,
   enabled,
 }: UseKnowledgeBaseStatusParams): UseQueryResult<
-  ReadKnowledgeBaseResponse & { product_documentation_status: InstallationStatus },
+  KnowledgeBaseStatusResponse & { product_documentation_status: InstallationStatus },
   IHttpFetchError
 > => {
   return useQuery(
     KNOWLEDGE_BASE_STATUS_QUERY_KEY,
     async ({ signal }) => {
-      return getKnowledgeBaseStatus({ http, resource, signal });
+      return getKnowledgeBaseStatus({ http, signal });
     },
     {
       enabled,
@@ -96,9 +93,9 @@ export const useInvalidateKnowledgeBaseStatus = () => {
  *
  * Note: Consider moving to API
  *
- * @param kbStatus ReadKnowledgeBaseResponse
+ * @param kbStatus KnowledgeBaseStatusResponse
  */
-export const isKnowledgeBaseSetup = (kbStatus: ReadKnowledgeBaseResponse | undefined): boolean =>
+export const isKnowledgeBaseSetup = (kbStatus: KnowledgeBaseStatusResponse | undefined): boolean =>
   (kbStatus?.elser_exists &&
     // Allows to use UI while importing Security Labs docs
     (kbStatus?.security_labs_exists ||

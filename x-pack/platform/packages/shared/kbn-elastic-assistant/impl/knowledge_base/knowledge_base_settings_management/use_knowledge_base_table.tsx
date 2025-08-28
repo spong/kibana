@@ -6,7 +6,7 @@
  */
 
 import type { EuiBasicTableColumn } from '@elastic/eui';
-import { EuiAvatar, EuiBadge, EuiIcon, EuiText, EuiLoadingSpinner, EuiToolTip } from '@elastic/eui';
+import { EuiAvatar, EuiBadge, EuiIcon, EuiText, EuiToolTip } from '@elastic/eui';
 import { css } from '@emotion/react';
 import React, { useCallback, useMemo } from 'react';
 import { FormattedDate } from '@kbn/i18n-react';
@@ -19,7 +19,6 @@ import * as i18n from './translations';
 import { BadgesColumn } from '../../assistant/common/components/assistant_settings_management/badges';
 import { useInlineActions } from '../../assistant/common/components/assistant_settings_management/inline_actions';
 import { isSystemEntry } from './helpers';
-import { SetupKnowledgeBaseButton } from '../setup_knowledge_base_button';
 
 const useUserProfile = ({ username, enabled = true }: { username: string; enabled: boolean }) => {
   const { userProfileService } = useAssistantContext();
@@ -148,14 +147,12 @@ export const useKnowledgeBaseTable = () => {
       isEditEnabled,
       onDeleteActionClicked,
       onEditActionClicked,
-      isKbSetupInProgress,
     }: {
       existingIndices?: string[];
       isDeleteEnabled: (entry: KnowledgeBaseEntryResponse) => boolean;
       isEditEnabled: (entry: KnowledgeBaseEntryResponse) => boolean;
       onDeleteActionClicked: (entry: KnowledgeBaseEntryResponse) => void;
       onEditActionClicked: (entry: KnowledgeBaseEntryResponse) => void;
-      isKbSetupInProgress: boolean;
     }): Array<EuiBasicTableColumn<KnowledgeBaseEntryResponse>> => {
       return [
         {
@@ -189,21 +186,7 @@ export const useKnowledgeBaseTable = () => {
           name: i18n.COLUMN_ENTRIES,
           render: (entry: KnowledgeBaseEntryResponse) => {
             return isSystemEntry(entry) ? (
-              <>
-                {`${entry.text}`}
-                {isKbSetupInProgress ? (
-                  <EuiLoadingSpinner
-                    size="m"
-                    css={css`
-                      margin-left: 8px;
-                    `}
-                  />
-                ) : (
-                  <EuiToolTip content={i18n.SECURITY_LABS_NOT_FULLY_LOADED}>
-                    <SetupKnowledgeBaseButton display="refresh" />
-                  </EuiToolTip>
-                )}
-              </>
+              <>{`${entry.text}`}</>
             ) : entry.type === DocumentEntryType.value ? (
               '1'
             ) : (

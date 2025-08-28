@@ -231,21 +231,6 @@ export class AIAssistantService {
     newDataStream.setIndexTemplate({
       name: this.resourceNames.indexTemplate[resource],
       componentTemplateRefs: [this.resourceNames.componentTemplate[resource]],
-      // Apply `default_pipeline` if pipeline exists for resource
-      ...(resource in this.resourceNames.pipelines &&
-      // Remove this param and initialization when the `assistantKnowledgeBaseByDefault` feature flag is removed
-      !(resource === 'knowledgeBase')
-        ? {
-            template: {
-              settings: {
-                'index.default_pipeline':
-                  this.resourceNames.pipelines[
-                    resource as keyof typeof this.resourceNames.pipelines
-                  ],
-              },
-            },
-          }
-        : {}),
     });
 
     return newDataStream;
@@ -301,6 +286,8 @@ export class AIAssistantService {
       writeIndexOnly: true,
     });
 
+    // TODO: It would be nice to integrate this logic inside the adapter, we could add a migration: 'update' | 'rollorver' option parameter to the install, like:
+    // TODO: await newDS.install(params, { migration: 'rollover' })
     // We need to first install the templates and then rollover the indices
     await newDS.installTemplates({
       esClient,
@@ -335,6 +322,10 @@ export class AIAssistantService {
           productDocManager: this.productDocManager,
           logger: this.options.logger,
           setIsProductDocumentationInProgress: this.setIsProductDocumentationInProgress.bind(this),
+        }).catch((e) => {
+          this.options.logger.error(
+            `Failed to install product documentation with inference ID: ${this.elserInferenceId}. Error: ${e.message}`
+          );
         });
       }
 
@@ -487,9 +478,6 @@ export class AIAssistantService {
       attackDiscovery: getResourceName('index-template-attack-discovery'),
       defendInsights: getResourceName('index-template-defend-insights'),
     },
-    pipelines: {
-      knowledgeBase: getResourceName('ingest-pipeline-knowledge-base'),
-    },
   };
 
   private async checkResourcesInstallation(opts: CreateAIAssistantClientParams) {
@@ -597,7 +585,6 @@ export class AIAssistantService {
       currentUser: opts.currentUser,
       elasticsearchClientPromise: this.options.elasticsearchClientPromise,
       indexPatternsResourceName: this.resourceNames.aliases.knowledgeBase,
-      ingestPipelineResourceName: this.resourceNames.pipelines.knowledgeBase,
       getElserId: this.getElserId,
       getIsKBSetupInProgress: this.getIsKBSetupInProgress.bind(this),
       getProductDocumentationStatus: this.getProductDocumentationStatus.bind(this),

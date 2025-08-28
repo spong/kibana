@@ -8,10 +8,7 @@
 import moment from 'moment';
 import { merge } from 'lodash';
 
-import type { ElasticsearchClient } from '@kbn/core/server';
-
 import { DataStreamSpacesAdapter } from '@kbn/data-stream-adapter';
-import { elasticsearchServiceMock } from '@kbn/core-elasticsearch-server-mocks';
 import { kibanaPackageJson } from '@kbn/repo-info';
 import { DefendInsightType } from '@kbn/elastic-assistant-common';
 
@@ -33,7 +30,6 @@ import {
   buildEsQueryParams,
   checkIfRemediationExists,
   createDatastream,
-  createPipeline,
   generateInsightId,
   generateTrustedAppsFilter,
   getValidCodeSignature,
@@ -43,7 +39,6 @@ import {
   COMPONENT_TEMPLATE_NAME,
   DATA_STREAM_PREFIX,
   INDEX_TEMPLATE_NAME,
-  INGEST_PIPELINE_NAME,
   TOTAL_FIELDS_LIMIT,
 } from './constants';
 import { securityWorkflowInsightsFieldMap } from './field_map_configurations';
@@ -128,33 +123,7 @@ describe('helpers', () => {
       expect(ds.setIndexTemplate).toHaveBeenCalledWith({
         name: INDEX_TEMPLATE_NAME,
         componentTemplateRefs: [COMPONENT_TEMPLATE_NAME],
-        template: {
-          settings: {
-            default_pipeline: INGEST_PIPELINE_NAME,
-          },
-        },
         hidden: true,
-      });
-    });
-  });
-
-  describe('createPipeline', () => {
-    let esClient: ElasticsearchClient;
-
-    beforeEach(() => {
-      esClient = elasticsearchServiceMock.createElasticsearchClient();
-    });
-
-    it('should create an ingest pipeline with the correct configuration', async () => {
-      await createPipeline(esClient);
-
-      expect(esClient.ingest.putPipeline).toHaveBeenCalledTimes(1);
-      expect(esClient.ingest.putPipeline).toHaveBeenCalledWith({
-        id: INGEST_PIPELINE_NAME,
-        processors: [],
-        _meta: {
-          managed: true,
-        },
       });
     });
   });

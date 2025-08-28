@@ -14,7 +14,6 @@ import { AssistantBeacon } from '@kbn/ai-assistant-icon';
 import { useVerticalBreakpoint } from './use_vertical_breakpoint';
 import { StarterPrompts } from './starter_prompts';
 import { SystemPrompt } from '../prompt_editor/system_prompt';
-import { SetupKnowledgeBaseButton } from '../../knowledge_base/setup_knowledge_base_button';
 import * as i18n from '../translations';
 
 interface Props {
@@ -81,9 +80,6 @@ export const EmptyConvo: React.FC<Props> = ({
                 setIsSettingsModalVisible={setIsSettingsModalVisible}
                 compressed={compressed}
               />
-            </EuiFlexItem>
-            <EuiFlexItem grow={false}>
-              <SetupKnowledgeBaseButton {...(compressed ? { display: 'mini' } : {})} />
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiPanel>

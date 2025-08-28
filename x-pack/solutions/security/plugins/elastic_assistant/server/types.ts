@@ -229,9 +229,6 @@ export interface AssistantResourceNames {
     attackDiscovery: string;
     defendInsights: string;
   };
-  pipelines: {
-    knowledgeBase: string;
-  };
 }
 
 export interface IIndexPatternString {

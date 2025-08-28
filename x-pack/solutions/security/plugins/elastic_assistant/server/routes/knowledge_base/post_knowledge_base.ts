@@ -5,12 +5,11 @@
  * 2.0.
  */
 
-import type { CreateKnowledgeBaseResponse } from '@kbn/elastic-assistant-common';
+import type { KnowledgeBaseSetupResponse } from '@kbn/elastic-assistant-common';
 import {
   API_VERSIONS,
-  CreateKnowledgeBaseRequestParams,
   ELASTIC_AI_ASSISTANT_KNOWLEDGE_BASE_URL,
-  CreateKnowledgeBaseRequestQuery,
+  KnowledgeBaseSetupRequestQuery,
 } from '@kbn/elastic-assistant-common';
 import { buildRouteValidationWithZod } from '@kbn/elastic-assistant-common/impl/schemas/common';
 import type { IKibanaResponse } from '@kbn/core/server';
@@ -22,7 +21,7 @@ import type { ElasticAssistantPluginRouter } from '../../types';
 const ROUTE_HANDLER_TIMEOUT = 20 * 60 * 1000; // 20 * 60 seconds = 20 minutes
 
 /**
- * Load Knowledge Base index, pipeline, and resources (collection of documents)
+ * Load Knowledge Base index, and resources (collection of documents)
  * @param router
  */
 export const postKnowledgeBaseRoute = (router: ElasticAssistantPluginRouter) => {
@@ -46,12 +45,11 @@ export const postKnowledgeBaseRoute = (router: ElasticAssistantPluginRouter) => 
         version: API_VERSIONS.public.v1,
         validate: {
           request: {
-            params: buildRouteValidationWithZod(CreateKnowledgeBaseRequestParams),
-            query: buildRouteValidationWithZod(CreateKnowledgeBaseRequestQuery),
+            query: buildRouteValidationWithZod(KnowledgeBaseSetupRequestQuery),
           },
         },
       },
-      async (context, request, response): Promise<IKibanaResponse<CreateKnowledgeBaseResponse>> => {
+      async (context, request, response): Promise<IKibanaResponse<KnowledgeBaseSetupResponse>> => {
         const resp = buildResponse(response);
         const ctx = await context.resolve(['core', 'elasticAssistant', 'licensing']);
         const assistantContext = ctx.elasticAssistant;
