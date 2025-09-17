@@ -6,7 +6,7 @@
  */
 
 import type { EuiBasicTableColumn } from '@elastic/eui';
-import { EuiAvatar, EuiBadge, EuiIcon, EuiText, EuiToolTip } from '@elastic/eui';
+import { EuiAvatar, EuiBadge, EuiIcon, EuiIconTip, EuiText } from '@elastic/eui';
 import { css } from '@emotion/react';
 import React, { useCallback, useMemo } from 'react';
 import { FormattedDate } from '@kbn/i18n-react';
@@ -104,19 +104,18 @@ const NameColumn = ({
     <>
       <EuiText size={'s'}>{entry.name}</EuiText>
       {showMissingIndexWarning && (
-        <EuiToolTip
+        <EuiIconTip
           data-test-subj="missing-index-tooltip"
           content={i18n.MISSING_INDEX_TOOLTIP_CONTENT}
-        >
-          <EuiIcon
-            data-test-subj="missing-index-icon"
-            type="warning"
-            color="danger"
-            css={css`
-              margin-left: 10px;
-            `}
-          />
-        </EuiToolTip>
+          type="warning"
+          color="danger"
+          css={css`
+            margin-left: 10px;
+          `}
+          iconProps={{
+            'data-test-subj': 'missing-index-icon',
+          }}
+        />
       )}
     </>
   );
