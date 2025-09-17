@@ -8,11 +8,11 @@ import { schema } from '@kbn/config-schema';
 import { defaultInferenceEndpoints } from '@kbn/inference-common';
 
 export interface ConfigSchema {
-  elserInferenceId: string;
+  inferenceId: string;
   responseTimeout: number;
 }
 export const configSchema = schema.object({
-  elserInferenceId: schema.string({ defaultValue: defaultInferenceEndpoints.ELSER }),
+  inferenceId: schema.string({ defaultValue: defaultInferenceEndpoints.ELSER }),
   responseTimeout: schema.number({
     defaultValue: 10 * 60 * 1000, // 10 minutes
   }),

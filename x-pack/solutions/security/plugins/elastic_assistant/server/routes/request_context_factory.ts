@@ -119,9 +119,7 @@ export class RequestContextFactory implements IRequestContextFactory {
       savedObjectsClient,
       telemetry: core.analytics,
 
-      // Note: elserInferenceId is used here to enable setting up the KB using a different ELSER model, which
-      // is necessary for testing purposes (`pt_tiny_elser`).
-      getAIAssistantKnowledgeBaseDataClient: memoize(async (params) => {
+      getAIAssistantKnowledgeBaseDataClient: memoize(async () => {
         const currentUser = await getCurrentUser();
 
         const { securitySolutionAssistant } = await coreStart.capabilities.resolveCapabilities(
@@ -135,7 +133,6 @@ export class RequestContextFactory implements IRequestContextFactory {
           logger: this.logger,
           licensing: context.licensing,
           currentUser,
-          elserInferenceId: params?.elserInferenceId,
           manageGlobalKnowledgeBaseAIAssistant:
             securitySolutionAssistant.manageGlobalKnowledgeBaseAIAssistant as boolean,
           // uses internal user to interact with ML API

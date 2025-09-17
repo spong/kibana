@@ -42,6 +42,7 @@ export interface InstallParams {
   esClient: ElasticsearchClient | Promise<ElasticsearchClient>;
   pluginStop$: Subject<void>;
   tasksTimeoutMs?: number;
+  migration?: 'rollover' | 'none';
 }
 
 const DEFAULT_FIELDS_LIMIT = 2500;
@@ -102,7 +103,7 @@ export class IndexAdapter {
   }
 
   public async installTemplates(params: InstallParams) {
-    const { logger, pluginStop$, tasksTimeoutMs } = params;
+    const { logger, pluginStop$, tasksTimeoutMs, migration = 'none' } = params;
     const esClient = await params.esClient;
     const installFn = this.getInstallFn({ logger, pluginStop$, tasksTimeoutMs });
 
@@ -134,6 +135,20 @@ export class IndexAdapter {
         )
       )
     );
+
+    if (migration === 'rollover') {
+      const indexNames = (
+        await esClient.indices.getDataStream({ name: this.name })
+      ).data_streams.map((ds) => ds.name);
+
+      try {
+        await Promise.all(
+          indexNames.map((indexName) => esClient.indices.rollover({ alias: indexName }))
+        );
+      } catch (e) {
+        logger.error(`Failed to rollover indices for ${this.name}: ${e.message}`);
+      }
+    }
   }
 
   public async install(params: InstallParams) {

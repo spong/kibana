@@ -54,17 +54,35 @@ export const postKnowledgeBaseRoute = (router: ElasticAssistantPluginRouter) => 
         const ctx = await context.resolve(['core', 'elasticAssistant', 'licensing']);
         const assistantContext = ctx.elasticAssistant;
         const ignoreSecurityLabs = request.query.ignoreSecurityLabs;
+        const inferenceId = request.query.inferenceId;
 
         try {
+          // Init product docs
+          // if (this.productDocManager) {
+          //   // install product documentation without blocking other resources
+          //   void this.setupProductDocumentation().catch((e) => {
+          //     this.options.logger.error(
+          //       `Failed to install product documentation with inference ID: ${this.elserInferenceId}. Error: ${e.message}`
+          //     );
+          //   });
+          // }
+
           const knowledgeBaseDataClient =
             await assistantContext.getAIAssistantKnowledgeBaseDataClient();
           if (!knowledgeBaseDataClient) {
             return response.custom({ body: { success: false }, statusCode: 500 });
           }
 
-          await knowledgeBaseDataClient.setupKnowledgeBase({
-            ignoreSecurityLabs,
-          });
+          // If an inferenceId is provided, update the knowledge base to use it
+          if (inferenceId) {
+            // Update knowledge base to use the specified inference ID
+            // This will perform rollover + reindex and setup product documentation
+            await knowledgeBaseDataClient.updateInferenceId(inferenceId);
+          }
+
+          // await knowledgeBaseDataClient.setupKnowledgeBase({
+          //   ignoreSecurityLabs,
+          // });
 
           return response.ok({ body: { success: true } });
         } catch (error) {

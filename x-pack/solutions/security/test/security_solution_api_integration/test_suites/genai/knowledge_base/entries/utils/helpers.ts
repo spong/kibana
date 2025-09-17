@@ -106,7 +106,7 @@ export const getTinyElserServerArgs = () => {
   return [
     `--xpack.productDocBase.elserInferenceId=${TINY_ELSER_INFERENCE_ID}`,
     `--xpack.securitySolution.siemRuleMigrations.elserInferenceId=${TINY_ELSER_INFERENCE_ID}`,
-    `--xpack.elasticAssistant.elserInferenceId=${TINY_ELSER_INFERENCE_ID}`,
+    `--xpack.elasticAssistant.inferenceId=${TINY_ELSER_INFERENCE_ID}`,
   ];
 };
 

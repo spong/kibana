@@ -94,6 +94,7 @@
     "@kbn/user-profile-components",
     "@kbn/core-user-profile-common",
     "@kbn/core-analytics-server-mocks",
+    "@kbn/lock-manager",
     "@kbn/core-security-server",
     "@kbn/index-adapter",
     "@kbn/langgraph-checkpoint-saver"

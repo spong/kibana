@@ -6,8 +6,9 @@
  */
 import type { FieldMap } from '@kbn/data-stream-adapter';
 
-export const ASSISTANT_ELSER_INFERENCE_ID = 'elastic-security-ai-assistant-elser2';
-
+/**
+ * Note: semantic_text field dynamically added to the index template for the desired inferenceId.
+ */
 export const knowledgeBaseFieldMap: FieldMap = {
   // Base fields
   '@timestamp': {
@@ -84,23 +85,6 @@ export const knowledgeBaseFieldMap: FieldMap = {
   },
   text: {
     type: 'text',
-    array: false,
-    required: false,
-  },
-  // Embeddings field
-  semantic_text: {
-    type: 'semantic_text',
-    array: false,
-    required: false,
-    inference_id: ASSISTANT_ELSER_INFERENCE_ID,
-  },
-  vector: {
-    type: 'object',
-    array: false,
-    required: false,
-  },
-  'vector.tokens': {
-    type: 'rank_features',
     array: false,
     required: false,
   },

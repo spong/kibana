@@ -8,6 +8,7 @@
 import { useMutation } from '@tanstack/react-query';
 import type { HttpSetup, IHttpFetchError, ResponseErrorBody } from '@kbn/core-http-browser';
 import type { IToasts } from '@kbn/core-notifications-browser';
+import type { KnowledgeBaseSetupRequestQueryInput } from '@kbn/elastic-assistant-common';
 import { i18n } from '@kbn/i18n';
 import { postKnowledgeBase } from './api';
 import { useInvalidateKnowledgeBaseStatus } from './use_knowledge_base_status';
@@ -21,8 +22,8 @@ export interface UseSetupKnowledgeBaseParams {
 }
 
 /**
- * Hook for setting up the Knowledge Base. Provide a resource name to set
- * up a specific part of the KB.
+ * Hook for setting up the Knowledge Base. Provide query parameters to
+ * configure the setup process.
  *
  * @param {Object} options - The options object.
  * @param {HttpSetup} options.http - HttpSetup
@@ -36,9 +37,9 @@ export const useSetupKnowledgeBase = ({ http, toasts }: UseSetupKnowledgeBasePar
 
   return useMutation(
     SETUP_KNOWLEDGE_BASE_MUTATION_KEY,
-    (resource?: string | void) => {
+    (query?: KnowledgeBaseSetupRequestQueryInput | void) => {
       // Optional params workaround: see: https://github.com/TanStack/query/issues/1077#issuecomment-1431247266
-      return postKnowledgeBase({ http, resource: resource ?? undefined });
+      return postKnowledgeBase({ http, query: query ?? undefined });
     },
     {
       onError: (error: IHttpFetchError<ResponseErrorBody>) => {

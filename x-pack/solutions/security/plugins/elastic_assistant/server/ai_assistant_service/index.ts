@@ -12,7 +12,6 @@ import type {
   AuthenticatedUser,
   Logger,
   ElasticsearchClient,
-  KibanaRequest,
   SavedObjectsClientContract,
 } from '@kbn/core/server';
 import type { TaskManagerSetupContract } from '@kbn/task-manager-plugin/server';
@@ -20,11 +19,7 @@ import type { MlPluginSetup } from '@kbn/ml-plugin/server';
 import type { Subject } from 'rxjs';
 import type { LicensingApiRequestHandlerContext } from '@kbn/licensing-plugin/server';
 import type { ProductDocBaseStartContract } from '@kbn/product-doc-base-plugin/server';
-import type {
-  IndicesIndexSettings,
-  IndicesSimulateTemplateResponse,
-} from '@elastic/elasticsearch/lib/api/types';
-import { omit, some } from 'lodash';
+import type { IndicesIndexSettings } from '@elastic/elasticsearch/lib/api/types';
 import type { InstallationStatus } from '@kbn/product-doc-base-plugin/common/install_status';
 import type { TrainedModelsProvider } from '@kbn/ml-plugin/server/shared_services/providers';
 import type { IRuleDataClient } from '@kbn/rule-registry-plugin/server';
@@ -34,7 +29,7 @@ import { ElasticSearchSaver } from '@kbn/langgraph-checkpoint-saver/server/elast
 import { alertSummaryFieldsFieldMap } from '../ai_assistant_data_clients/alert_summary/field_maps_configuration';
 import { defendInsightsFieldMap } from '../lib/defend_insights/persistence/field_maps_configuration';
 import { getDefaultAnonymizationFields } from '../../common/anonymization';
-import type { AssistantResourceNames, GetElser } from '../types';
+import type { AssistantResourceNames } from '../types';
 import type { GetAIAssistantConversationsDataClientParams } from '../ai_assistant_data_clients/conversations';
 import { AIAssistantConversationsDataClient } from '../ai_assistant_data_clients/conversations';
 import type {
@@ -50,18 +45,12 @@ import { conversationsFieldMap } from '../ai_assistant_data_clients/conversation
 import { assistantPromptsFieldMap } from '../ai_assistant_data_clients/prompts/field_maps_configuration';
 import { assistantAnonymizationFieldsFieldMap } from '../ai_assistant_data_clients/anonymization_fields/field_maps_configuration';
 import { AIAssistantDataClient } from '../ai_assistant_data_clients';
-import {
-  ASSISTANT_ELSER_INFERENCE_ID,
-  knowledgeBaseFieldMap,
-} from '../ai_assistant_data_clients/knowledge_base/field_maps_configuration';
+import { knowledgeBaseFieldMap } from '../ai_assistant_data_clients/knowledge_base/field_maps_configuration';
 import type { GetAIAssistantKnowledgeBaseDataClientParams } from '../ai_assistant_data_clients/knowledge_base';
-import {
-  AIAssistantKnowledgeBaseDataClient,
-  ensureDedicatedInferenceEndpoint,
-} from '../ai_assistant_data_clients/knowledge_base';
+import { AIAssistantKnowledgeBaseDataClient } from '../ai_assistant_data_clients/knowledge_base';
 import { AttackDiscoveryDataClient } from '../lib/attack_discovery/persistence';
 import { DefendInsightsDataClient } from '../lib/defend_insights/persistence';
-import { createGetElserId, ensureProductDocumentationInstalled } from './helpers';
+import { ensureProductDocumentationInstalled, getCurrentInferenceId } from './helpers';
 import { hasAIAssistantLicense } from '../routes/helpers';
 import type { CreateAttackDiscoveryScheduleDataClientParams } from '../lib/attack_discovery/schedules/data_client';
 import { AttackDiscoveryScheduleDataClient } from '../lib/attack_discovery/schedules/data_client';
@@ -82,7 +71,7 @@ export function getResourceName(resource: string) {
 export interface AIAssistantServiceOpts {
   logger: Logger;
   kibanaVersion: string;
-  elserInferenceId?: string;
+  inferenceId?: string;
   elasticsearchClientPromise: Promise<ElasticsearchClient>;
   soClientPromise: Promise<SavedObjectsClientContract>;
   ml: MlPluginSetup;
@@ -125,8 +114,7 @@ export type CreateIndexPattern = (params: {
 export class AIAssistantService {
   private initialized: boolean;
   private isInitializing: boolean = false;
-  private getElserId: GetElser;
-  private elserInferenceId?: string;
+  private inferenceId?: string;
   private conversationsDataStream: DataStreamSpacesAdapter;
   private knowledgeBaseDataStream: DataStreamSpacesAdapter;
   private promptsDataStream: DataStreamSpacesAdapter;
@@ -137,16 +125,12 @@ export class AIAssistantService {
   private checkpointWritesDataStream: IndexPatternAdapter;
   private resourceInitializationHelper: ResourceInstallationHelper;
   private initPromise: Promise<InitializationPromise>;
-  private isKBSetupInProgress: Map<string, boolean> = new Map();
-  private hasInitializedV2KnowledgeBase: boolean = false;
   private productDocManager?: ProductDocBaseStartContract['management'];
-  private isProductDocumentationInProgress: boolean = false;
   private isCheckpointSaverEnabled: boolean = false;
 
   constructor(private readonly options: AIAssistantServiceOpts) {
     this.initialized = false;
-    this.getElserId = createGetElserId(options.ml.trainedModelsProvider);
-    this.elserInferenceId = options.elserInferenceId;
+    this.inferenceId = options.inferenceId;
 
     this.conversationsDataStream = this.createDataStream({
       resource: 'conversations',
@@ -218,22 +202,6 @@ export class AIAssistantService {
     return this.initialized;
   }
 
-  public getIsKBSetupInProgress(spaceId: string) {
-    return this.isKBSetupInProgress.get(spaceId) ?? false;
-  }
-
-  public setIsKBSetupInProgress(spaceId: string, isInProgress: boolean) {
-    this.isKBSetupInProgress.set(spaceId, isInProgress);
-  }
-
-  public getIsProductDocumentationInProgress() {
-    return this.isProductDocumentationInProgress;
-  }
-
-  public setIsProductDocumentationInProgress(isInProgress: boolean) {
-    this.isProductDocumentationInProgress = isInProgress;
-  }
-
   private createIndexPattern: CreateIndexPattern = ({
     resource,
     kibanaVersion,
@@ -256,15 +224,6 @@ export class AIAssistantService {
     newIndexPattern.setIndexTemplate({
       name: this.resourceNames.indexTemplate[resource],
       componentTemplateRefs: [this.resourceNames.componentTemplate[resource]],
-      // Apply `default_pipeline` if pipeline exists for resource
-      ...(resource in this.resourceNames.pipelines && {
-        template: {
-          settings: {
-            'index.default_pipeline':
-              this.resourceNames.pipelines[resource as keyof typeof this.resourceNames.pipelines],
-          },
-        },
-      }),
     });
 
     return newIndexPattern;
@@ -297,78 +256,136 @@ export class AIAssistantService {
     return newDataStream;
   };
 
-  private async rolloverDataStream(
+  /**
+   * Performs rollover and reindex of the knowledge base data stream with a new inference ID
+   * @param initialInferenceEndpointId - The current inference endpoint ID
+   * @param targetInferenceEndpointId - The target inference endpoint ID to migrate to
+   * @returns Promise<DataStreamSpacesAdapter> - The new data stream adapter
+   */
+  public async rolloverKnowledgeBaseDataStream(
     initialInferenceEndpointId: string,
     targetInferenceEndpointId: string
   ): Promise<DataStreamSpacesAdapter> {
     const esClient = await this.options.elasticsearchClientPromise;
-
-    const currentDataStream = this.createDataStream({
-      resource: 'knowledgeBase',
-      kibanaVersion: this.options.kibanaVersion,
-      fieldMap: {
-        ...omit(knowledgeBaseFieldMap, 'semantic_text'),
-        semantic_text: {
-          type: 'semantic_text',
-          array: false,
-          required: false,
-          inference_id: initialInferenceEndpointId,
-          search_inference_id: targetInferenceEndpointId,
-        },
-      },
-    });
-
-    // Add `search_inference_id` to the existing mappings
-    await currentDataStream.install({
-      esClient,
-      logger: this.options.logger,
-      pluginStop$: this.options.pluginStop$,
-    });
 
     // Migrate data stream mapping to the default inference_id
     const newDS = this.createDataStream({
       resource: 'knowledgeBase',
       kibanaVersion: this.options.kibanaVersion,
       fieldMap: {
-        ...omit(knowledgeBaseFieldMap, ['semantic_text', 'vector', 'vector.tokens']),
+        ...knowledgeBaseFieldMap,
+      },
+      writeIndexOnly: true,
+    });
+    newDS.setComponentTemplate({
+      name: targetInferenceEndpointId,
+      fieldMap: {
         semantic_text: {
           type: 'semantic_text',
           array: false,
           required: false,
-          ...(targetInferenceEndpointId !== defaultInferenceEndpoints.ELSER
-            ? { inference_id: targetInferenceEndpointId }
-            : {}),
+          inference_id: targetInferenceEndpointId,
         },
       },
-      settings: {
-        // force new semantic_text field behavior
-        'index.mapping.semantic_text.use_legacy_format': false,
-      },
-      writeIndexOnly: true,
+    });
+    newDS.setIndexTemplate({
+      name: `${this.resourceNames.indexTemplate[resource]}-${targetInferenceEndpointId}`,
+      componentTemplateRefs: [this.resourceNames.componentTemplate[resource]],
     });
 
-    // TODO: It would be nice to integrate this logic inside the adapter, we could add a migration: 'update' | 'rollorver' option parameter to the install, like:
-    // TODO: await newDS.install(params, { migration: 'rollover' })
     // We need to first install the templates and then rollover the indices
     await newDS.installTemplates({
       esClient,
       logger: this.options.logger,
       pluginStop$: this.options.pluginStop$,
+      migration: 'rollover',
     });
 
-    const indexNames = (
-      await esClient.indices.getDataStream({ name: newDS.name })
-    ).data_streams.map((ds) => ds.name);
-
-    try {
-      await Promise.all(
-        indexNames.map((indexName) => esClient.indices.rollover({ alias: indexName }))
-      );
-    } catch (e) {
-      /* empty */
-    }
+    // Now do re-index
 
     return newDS;
+  }
+
+  /**
+   * Sets up product documentation installation
+   * @param inferenceId - Optional inference ID to use for product documentation
+   */
+  public async setupProductDocumentation(inferenceId?: string): Promise<void> {
+    if (!this.productDocManager) {
+      this.options.logger.warn('Product documentation manager not available');
+      return;
+    }
+
+    const targetInferenceId = inferenceId || defaultInferenceEndpoints.ELSER;
+
+    try {
+      await ensureProductDocumentationInstalled({
+        productDocManager: this.productDocManager,
+        logger: this.options.logger,
+        setIsProductDocumentationInProgress: this.setIsProductDocumentationInProgress.bind(this),
+        inferenceId: targetInferenceId,
+      });
+    } catch (e) {
+      this.options.logger.error(
+        `Failed to install product documentation with inference ID: ${targetInferenceId}. Error: ${e.message}`
+      );
+      throw e;
+    }
+  }
+
+  /**
+   * Updates the knowledge base to use a specific inference ID and performs rollover + reindex.
+   * This method also sets up product documentation with the new inference ID.
+   * @param params - Object containing the target inference ID and space ID.
+   * @param params.targetInferenceId - The inference ID to migrate the knowledge base to.
+   * @param params.spaceId - The space ID for which to update the knowledge base.
+   * @returns Promise<void>
+   */
+  public async updateKnowledgeBaseInferenceId({
+    spaceId,
+    targetInferenceId,
+  }: {
+    spaceId: string;
+    targetInferenceId: string;
+  }): Promise<void> {
+    this.options.logger.info(
+      `Updating knowledge base in space '${spaceId}' to use inference ID '${targetInferenceId}'`
+    );
+
+    try {
+      const esClient = await this.options.elasticsearchClientPromise;
+
+      const currentInferenceId = await getCurrentInferenceId({
+        esClient,
+        logger: this.options.logger,
+        resourceName: this.resourceNames.aliases.knowledgeBase,
+        spaceId,
+      });
+
+      if (currentInferenceId === targetInferenceId) {
+        this.options.logger.info(
+          `Knowledge base already using inference ID '${targetInferenceId}', skipping update`
+        );
+        return;
+      }
+
+      this.options.logger.info(
+        `Rolling over knowledge base from ${currentInferenceId} to ${targetInferenceId}`
+      );
+      //  asdf
+      // Perform the rollover and reindex
+      await this.rolloverKnowledgeBaseDataStream(currentInferenceId, targetInferenceId);
+
+      // Setup product documentation with the new inference ID
+      // await this.setupProductDocumentation(targetInferenceId);
+
+      this.options.logger.info(
+        `Successfully updated knowledge base to use inference ID: ${targetInferenceId}`
+      );
+    } catch (error) {
+      this.options.logger.error(`Failed to update knowledge base inference ID: ${error.message}`);
+      throw error;
+    }
   }
 
   private async initializeResources(): Promise<InitializationPromise> {
@@ -377,83 +394,10 @@ export class AIAssistantService {
       this.options.logger.debug(`Initializing resources for AIAssistantService`);
       const esClient = await this.options.elasticsearchClientPromise;
 
-      if (this.productDocManager) {
-        // install product documentation without blocking other resources
-        void ensureProductDocumentationInstalled({
-          productDocManager: this.productDocManager,
-          logger: this.options.logger,
-          setIsProductDocumentationInProgress: this.setIsProductDocumentationInProgress.bind(this),
-        }).catch((e) => {
-          this.options.logger.error(
-            `Failed to install product documentation with inference ID: ${this.elserInferenceId}. Error: ${e.message}`
-          );
-        });
-      }
-
       await this.conversationsDataStream.install({
         esClient,
         logger: this.options.logger,
         pluginStop$: this.options.pluginStop$,
-      });
-
-      const knowledgeBaseDataSteams = (
-        await esClient.indices.getDataStream({
-          name: this.knowledgeBaseDataStream.name,
-        })
-      )?.data_streams;
-
-      let mappings: IndicesSimulateTemplateResponse[] = [];
-      try {
-        mappings = await Promise.all(
-          knowledgeBaseDataSteams.map((ds) =>
-            esClient.indices.simulateTemplate({
-              name: ds.template,
-            })
-          )
-        );
-      } catch (error) {
-        /* empty */
-      }
-
-      const isUsingDedicatedInferenceEndpoint = some(
-        mappings,
-        (value) =>
-          (value?.template?.mappings?.properties?.semantic_text as { inference_id: string })
-            ?.inference_id === ASSISTANT_ELSER_INFERENCE_ID
-      );
-
-      if (isUsingDedicatedInferenceEndpoint) {
-        this.knowledgeBaseDataStream = await this.rolloverDataStream(
-          ASSISTANT_ELSER_INFERENCE_ID,
-          defaultInferenceEndpoints.ELSER
-        );
-      } else {
-        // We need to make sure that the data stream is created with the correct mappings
-        this.knowledgeBaseDataStream = this.createDataStream({
-          resource: 'knowledgeBase',
-          kibanaVersion: this.options.kibanaVersion,
-          fieldMap: {
-            ...omit(knowledgeBaseFieldMap, ['semantic_text', 'vector', 'vector.tokens']),
-            semantic_text: {
-              type: 'semantic_text',
-              array: false,
-              required: false,
-              ...(this.elserInferenceId ? { inference_id: this.elserInferenceId } : {}),
-            },
-          },
-          writeIndexOnly: true,
-        });
-      }
-
-      const soClient = await this.options.soClientPromise;
-
-      await ensureDedicatedInferenceEndpoint({
-        elserId: await this.getElserId(),
-        esClient,
-        getTrainedModelsProvider: () =>
-          this.options.ml.trainedModelsProvider({} as KibanaRequest, soClient),
-        logger: this.options.logger,
-        index: this.knowledgeBaseDataStream.name,
       });
 
       await this.knowledgeBaseDataStream.install({
@@ -552,6 +496,7 @@ export class AIAssistantService {
   };
 
   private async checkResourcesInstallation(opts: CreateAIAssistantClientParams) {
+    console.log('Checking resources installation for spaceId:', opts.spaceId);
     const licensing = await opts.licensing;
     if (!hasAIAssistantLicense(licensing.license)) return null;
     // Check if resources installation has succeeded
@@ -561,6 +506,7 @@ export class AIAssistantService {
 
     // If space level resources initialization failed, retry
     if (!initialized && error) {
+      console.log(`Resources not initialized for spaceId: ${opts.spaceId}, retrying...`);
       let initRetryPromise: Promise<InitializationPromise> | undefined;
 
       // If !this.initialized, we know that resource initialization failed
@@ -656,15 +602,6 @@ export class AIAssistantService {
         getTrainedModelsProvider: () => ReturnType<TrainedModelsProvider['trainedModelsProvider']>;
       }
   ): Promise<AIAssistantKnowledgeBaseDataClient | null> {
-    // If a V2 KnowledgeBase has never been initialized we need to reinitialize all persistence resources to make sure
-    // they're using the correct model/mappings. Technically all existing KB data is stale since it was created
-    // with a different model/mappings.
-    // Added hasInitializedV2KnowledgeBase to prevent the console noise from re-init on each KB request
-    if (!this.hasInitializedV2KnowledgeBase) {
-      await this.initializeResources();
-      this.hasInitializedV2KnowledgeBase = true;
-    }
-
     const res = await this.checkResourcesInstallation(opts);
 
     if (res === null) {
@@ -676,16 +613,14 @@ export class AIAssistantService {
       currentUser: opts.currentUser,
       elasticsearchClientPromise: this.options.elasticsearchClientPromise,
       indexPatternsResourceName: this.resourceNames.aliases.knowledgeBase,
-      getElserId: this.getElserId,
-      getIsKBSetupInProgress: this.getIsKBSetupInProgress.bind(this),
       getProductDocumentationStatus: this.getProductDocumentationStatus.bind(this),
       kibanaVersion: this.options.kibanaVersion,
       ml: this.options.ml,
-      elserInferenceId: this.options.elserInferenceId,
-      setIsKBSetupInProgress: this.setIsKBSetupInProgress.bind(this),
+      inferenceId: this.options.inferenceId,
       spaceId: opts.spaceId,
       manageGlobalKnowledgeBaseAIAssistant: opts.manageGlobalKnowledgeBaseAIAssistant ?? false,
       getTrainedModelsProvider: opts.getTrainedModelsProvider,
+      updateKnowledgeBaseInferenceId: this.updateKnowledgeBaseInferenceId.bind(this),
     });
   }
 
@@ -817,6 +752,7 @@ export class AIAssistantService {
   private async installAndUpdateSpaceLevelResources(
     spaceId: string | undefined = DEFAULT_NAMESPACE_STRING
   ) {
+    console.log('Entering installAndUpdateSpaceLevelResources for spaceID:', spaceId);
     try {
       this.options.logger.debug(`Initializing spaceId level resources for AIAssistantService`);
       const conversationsIndexName = await this.conversationsDataStream.getInstalledSpaceName(
@@ -826,11 +762,42 @@ export class AIAssistantService {
         await this.conversationsDataStream.installSpace(spaceId);
       }
 
-      const knowledgeBaseIndexName = await this.knowledgeBaseDataStream.getInstalledSpaceName(
-        spaceId
-      );
-      if (!knowledgeBaseIndexName) {
-        await this.knowledgeBaseDataStream.installSpace(spaceId);
+      const esClient = await this.options.elasticsearchClientPromise;
+      const currentInferenceId = await getCurrentInferenceId({
+        esClient,
+        logger: this.options.logger,
+        resourceName: this.resourceNames.aliases.knowledgeBase,
+        spaceId,
+      });
+      console.log('spaceId:', spaceId);
+      console.log('Current inference ID for knowledge base:', currentInferenceId);
+      if (currentInferenceId == null) {
+        const newDS = this.createDataStream({
+          resource: `knowledgeBase`,
+          kibanaVersion: this.options.kibanaVersion,
+          fieldMap: {
+            ...knowledgeBaseFieldMap,
+            semantic_text: {
+              type: 'semantic_text',
+              array: false,
+              required: false,
+              inference_id: defaultInferenceEndpoints.ELSER,
+            },
+          },
+          writeIndexOnly: true,
+        });
+        const knowledgeBaseIndexName = await newDS.getInstalledSpaceName(spaceId);
+        console.log(
+          'getSpaceResourcesInitializationPromise:knowledgeBaseIndexName:',
+          knowledgeBaseIndexName
+        );
+
+        await newDS.install({
+          esClient,
+          logger: this.options.logger,
+          pluginStop$: this.options.pluginStop$,
+        });
+        await newDS.installSpace(spaceId);
       }
 
       const promptsIndexName = await this.promptsDataStream.getInstalledSpaceName(spaceId);

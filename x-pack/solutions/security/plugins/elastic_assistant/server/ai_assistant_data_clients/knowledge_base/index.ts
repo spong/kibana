@@ -88,19 +88,19 @@ import { findDocuments } from '../find';
  * configuration after initial plugin start
  */
 export interface GetAIAssistantKnowledgeBaseDataClientParams {
-  elserInferenceId?: string;
   manageGlobalKnowledgeBaseAIAssistant?: boolean;
 }
 
 export interface KnowledgeBaseDataClientParams extends AIAssistantDataClientParams {
   ml: MlPluginSetup;
   getElserId: GetElser;
-  getIsKBSetupInProgress: (spaceId: string) => boolean;
+  getIsKBSetupInProgress?: (spaceId: string) => boolean;
   getProductDocumentationStatus: () => Promise<InstallationStatus>;
-  setIsKBSetupInProgress: (spaceId: string, isInProgress: boolean) => void;
+  setIsKBSetupInProgress?: (spaceId: string, isInProgress: boolean) => void;
   manageGlobalKnowledgeBaseAIAssistant: boolean;
   getTrainedModelsProvider: () => ReturnType<TrainedModelsProvider['trainedModelsProvider']>;
   elserInferenceId?: string;
+  updateKnowledgeBaseInferenceId: ({ spaceId: string, targetInferenceId: string }) => Promise<void>;
 }
 export class AIAssistantKnowledgeBaseDataClient extends AIAssistantDataClient {
   constructor(public readonly options: KnowledgeBaseDataClientParams) {
@@ -108,12 +108,21 @@ export class AIAssistantKnowledgeBaseDataClient extends AIAssistantDataClient {
   }
 
   public get isSetupInProgress() {
-    return this.options.getIsKBSetupInProgress(this.spaceId);
+    // return this.options.getIsKBSetupInProgress(this.spaceId);
+    return false;
   }
 
   public getProductDocumentationStatus = async () => {
     return (await this.options.getProductDocumentationStatus()) ?? 'uninstalled';
   };
+
+  /**
+   * Updates the knowledge base to use a specific inference ID and performs rollover + reindex
+   * @param targetInferenceId - The inference ID to migrate the knowledge base to
+   */
+  public async updateInferenceId(targetInferenceId: string): Promise<void> {
+    await this.options.updateKnowledgeBaseInferenceId({ spaceId: this.spaceId, targetInferenceId });
+  }
 
   /**
    * Returns whether setup of the Knowledge Base can be performed (essentially an ML features check)
@@ -210,10 +219,10 @@ export class AIAssistantKnowledgeBaseDataClient extends AIAssistantDataClient {
     const elserId = await this.options.getElserId();
     const esClient = await this.options.elasticsearchClientPromise;
 
-    if (this.options.getIsKBSetupInProgress(this.spaceId)) {
-      this.options.logger.debug('Knowledge Base setup already in progress');
-      return;
-    }
+    // if (this.options.getIsKBSetupInProgress(this.spaceId)) {
+    //   this.options.logger.debug('Knowledge Base setup already in progress');
+    //   return;
+    // }
 
     try {
       this.options.logger.debug('Checking if ML nodes are available...');
@@ -985,7 +994,7 @@ export const isInferenceEndpointExists = async ({
       inference_id: inferenceId,
       task_type: 'sparse_embedding',
     });
-    console.log('inferenceIdresponse', response);
+    // console.log('inferenceIdresponse', response);
 
     if (!response.endpoints?.[0]?.service_settings?.model_id) {
       return false;

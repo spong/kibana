@@ -194,8 +194,6 @@ export type ElasticAssistantPluginCoreSetupDependencies = CoreSetup<
   ElasticAssistantPluginStart
 >;
 
-export type GetElser = () => Promise<string> | never;
-
 export interface AssistantResourceNames {
   componentTemplate: {
     alertSummary: string;

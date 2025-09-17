@@ -6,28 +6,59 @@
  */
 
 import type { ElasticsearchClient } from '@kbn/core-elasticsearch-server';
-import type { KibanaRequest } from '@kbn/core-http-server';
-import type { SavedObjectsClientContract } from '@kbn/core-saved-objects-api-server';
-import type { MlPluginSetup } from '@kbn/ml-plugin/server';
 import type { DeleteByQueryRequest } from '@elastic/elasticsearch/lib/api/types';
 import { i18n } from '@kbn/i18n';
 import type { ProductDocBaseStartContract } from '@kbn/product-doc-base-plugin/server';
 import type { Logger } from '@kbn/logging';
 import { defaultInferenceEndpoints } from '@kbn/inference-common';
 import { getResourceName } from '.';
-import type { GetElser } from '../types';
 
-/**
- * Creates a function that returns the ELSER model ID
- *
- * @param ml
- */
-export const createGetElserId =
-  (trainedModelsProvider: MlPluginSetup['trainedModelsProvider']): GetElser =>
-  async () =>
-    // Force check to happen as internal user
-    (await trainedModelsProvider({} as KibanaRequest, {} as SavedObjectsClientContract).getELSER())
-      .model_id;
+export const getCurrentInferenceId = async ({
+  esClient,
+  logger,
+  resourceName,
+  spaceId,
+}: {
+  esClient: ElasticsearchClient;
+  logger: Logger;
+  resourceName: string;
+  spaceId: string;
+}): Promise<string | undefined> => {
+  try {
+    const dataStreamName = `${resourceName}-${spaceId}`;
+
+    // Get data stream info to find the write index
+    const dataStreamResponse = await esClient.indices.getDataStream({
+      name: dataStreamName,
+    });
+
+    if (!dataStreamResponse.data_streams || dataStreamResponse.data_streams.length === 0) {
+      logger.debug(`Data stream ${dataStreamName} not found`);
+      return null;
+    }
+
+    const dataStream = dataStreamResponse.data_streams[0];
+    const writeIndex = dataStream.indices[dataStream.indices.length - 1].index_name;
+
+    // Get the mapping from the write index
+    const mappingResponse = await esClient.indices.getMapping({
+      index: writeIndex,
+    });
+
+    const mapping = mappingResponse[writeIndex]?.mappings;
+    const semanticTextField = mapping?.properties?.semantic_text;
+
+    if (semanticTextField?.type === 'semantic_text') {
+      return semanticTextField.inference_id || undefined;
+    }
+
+    logger.debug(`No semantic_text field found in write index ${writeIndex} mapping`);
+    return undefined;
+  } catch (error) {
+    logger.debug(`Data stream ${resourceName} for space ${spaceId} not found`);
+    return undefined;
+  }
+};
 
 export const removeLegacyQuickPrompt = async (esClient: ElasticsearchClient) => {
   try {
@@ -75,24 +106,30 @@ export const ensureProductDocumentationInstalled = async ({
   productDocManager,
   setIsProductDocumentationInProgress,
   logger,
+  inferenceId = defaultInferenceEndpoints.ELSER,
 }: {
   productDocManager: ProductDocBaseStartContract['management'];
   setIsProductDocumentationInProgress: (value: boolean) => void;
   logger: Logger;
+  inferenceId?: string;
 }) => {
   try {
     const { status } = await productDocManager.getStatus({
-      inferenceId: defaultInferenceEndpoints.ELSER,
+      inferenceId,
     });
     if (status !== 'installed') {
-      logger.debug(`Installing product documentation for AIAssistantService`);
+      logger.debug(
+        `Installing product documentation for AIAssistantService with inference ID: ${inferenceId}`
+      );
       setIsProductDocumentationInProgress(true);
       try {
         await productDocManager.install({
           wait: true,
-          inferenceId: defaultInferenceEndpoints.ELSER,
+          inferenceId,
         });
-        logger.debug(`Successfully installed product documentation for AIAssistantService`);
+        logger.debug(
+          `Successfully installed product documentation for AIAssistantService with inference ID: ${inferenceId}`
+        );
       } catch (e) {
         logger.warn(`Failed to install product documentation for AIAssistantService: ${e.message}`);
       } finally {

@@ -5,16 +5,20 @@
  * 2.0.
  */
 
-import type { EuiSearchBarProps } from '@elastic/eui';
+import type { EuiSearchBarProps, EuiSwitchEvent } from '@elastic/eui';
 import {
   EuiButton,
+  EuiButtonIcon,
   EuiConfirmModal,
+  EuiContextMenu,
   EuiFlexGroup,
   EuiFlexItem,
   EuiInMemoryTable,
   EuiLink,
   EuiPanel,
+  EuiPopover,
   EuiSpacer,
+  EuiSwitch,
   EuiText,
   useGeneratedHtmlId,
 } from '@elastic/eui';
@@ -58,6 +62,7 @@ import { useUpdateKnowledgeBaseEntries } from '../../assistant/api/knowledge_bas
 import { DELETE, SETTINGS_UPDATED_TOAST_TITLE } from '../../assistant/settings/translations';
 import type { KnowledgeBaseConfig } from '../../assistant/types';
 import { useKnowledgeBaseStatus } from '../../assistant/api/knowledge_base/use_knowledge_base_status';
+import { useSetupKnowledgeBase } from '../../assistant/api/knowledge_base/use_setup_knowledge_base';
 
 interface Params {
   dataViews: DataViewsContract;
@@ -93,6 +98,8 @@ export const KnowledgeBaseSettingsManagement: React.FC<Params> = React.memo(({ d
   const [originalEntry, setOriginalEntry] = useState<DocumentEntry | IndexEntry | undefined>(
     undefined
   );
+  const [isOverflowPopoverOpen, setIsOverflowPopoverOpen] = useState(false);
+  const [isMultilingualOptimizationEnabled, setIsMultilingualOptimizationEnabled] = useState(false);
 
   // Only needed for legacy settings management
   const {
@@ -153,6 +160,11 @@ export const KnowledgeBaseSettingsManagement: React.FC<Params> = React.memo(({ d
     http,
     toasts,
   });
+  const { mutateAsync: setupKnowledgeBase, isLoading: isSettingUpKnowledgeBase } =
+    useSetupKnowledgeBase({
+      http,
+      toasts,
+    });
   const isModifyingEntry = isCreatingEntry || isUpdatingEntries || isDeletingEntries;
 
   const {
@@ -207,7 +219,6 @@ export const KnowledgeBaseSettingsManagement: React.FC<Params> = React.memo(({ d
   const columns = useMemo(
     () =>
       getColumns({
-        isKbSetupInProgress: kbStatus?.is_setup_in_progress ?? false,
         existingIndices,
         isDeleteEnabled: (entry: KnowledgeBaseEntryResponse) => {
           return (
@@ -230,14 +241,7 @@ export const KnowledgeBaseSettingsManagement: React.FC<Params> = React.memo(({ d
           openFlyout();
         },
       }),
-    [
-      entries.data,
-      existingIndices,
-      getColumns,
-      hasManageGlobalKnowledgeBase,
-      kbStatus?.is_setup_in_progress,
-      openFlyout,
-    ]
+    [entries.data, existingIndices, getColumns, hasManageGlobalKnowledgeBase, openFlyout]
   );
 
   // Refresh button
@@ -252,6 +256,61 @@ export const KnowledgeBaseSettingsManagement: React.FC<Params> = React.memo(({ d
     setSelectedEntry({ type: IndexEntryType.value });
     openFlyout();
   }, [openFlyout]);
+
+  const toggleOverflowPopover = useCallback(() => {
+    setIsOverflowPopoverOpen(!isOverflowPopoverOpen);
+  }, [isOverflowPopoverOpen]);
+
+  const closeOverflowPopover = useCallback(() => {
+    setIsOverflowPopoverOpen(false);
+  }, []);
+
+  const handleMultilingualToggle = useCallback(
+    async (e: EuiSwitchEvent) => {
+      // Prevent the event from bubbling up and closing the popover
+      e.stopPropagation();
+
+      const newValue = e.target.checked;
+      setIsMultilingualOptimizationEnabled(newValue);
+
+      // Call the setup knowledge base hook to optimize for multilingual support
+      await setupKnowledgeBase({
+        inferenceId: newValue
+          ? defaultInferenceEndpoints.MULTILINGUAL_E5_SMALL
+          : defaultInferenceEndpoints.ELSER,
+      });
+    },
+    [setupKnowledgeBase]
+  );
+
+  const overflowMenuPanels = useMemo(
+    () => [
+      {
+        id: 0,
+        items: [
+          {
+            name: (
+              <div
+                role="presentation"
+                tabIndex={-1}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
+                <EuiSwitch
+                  label="Optimize for multilingual"
+                  checked={isMultilingualOptimizationEnabled}
+                  onChange={handleMultilingualToggle}
+                  disabled={isSettingUpKnowledgeBase}
+                />
+              </div>
+            ),
+            panel: undefined,
+          },
+        ],
+      },
+    ],
+    [handleMultilingualToggle, isMultilingualOptimizationEnabled, isSettingUpKnowledgeBase]
+  );
 
   const search: EuiSearchBarProps = useMemo(
     () => ({
@@ -275,6 +334,26 @@ export const KnowledgeBaseSettingsManagement: React.FC<Params> = React.memo(({ d
           <EuiFlexItem>
             <AddEntryButton onDocumentClicked={onDocumentClicked} onIndexClicked={onIndexClicked} />
           </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiPopover
+              button={
+                <EuiButtonIcon
+                  iconType="boxesVertical"
+                  onClick={toggleOverflowPopover}
+                  aria-label="More options"
+                  data-test-subj="knowledge-base-overflow-menu-button"
+                  size="m"
+                  display="base"
+                />
+              }
+              isOpen={isOverflowPopoverOpen}
+              closePopover={closeOverflowPopover}
+              panelPaddingSize="none"
+              anchorPosition="downLeft"
+            >
+              <EuiContextMenu initialPanelId={0} panels={overflowMenuPanels} />
+            </EuiPopover>
+          </EuiFlexItem>
         </EuiFlexGroup>
       ),
       box: {
@@ -284,7 +363,17 @@ export const KnowledgeBaseSettingsManagement: React.FC<Params> = React.memo(({ d
       filters: [],
       defaultQuery: initialSearchTerm,
     }),
-    [isFetchingEntries, handleRefreshTable, onDocumentClicked, onIndexClicked, initialSearchTerm]
+    [
+      isFetchingEntries,
+      handleRefreshTable,
+      onDocumentClicked,
+      onIndexClicked,
+      initialSearchTerm,
+      isOverflowPopoverOpen,
+      toggleOverflowPopover,
+      closeOverflowPopover,
+      overflowMenuPanels,
+    ]
   );
 
   const flyoutTitle = useMemo(() => {
