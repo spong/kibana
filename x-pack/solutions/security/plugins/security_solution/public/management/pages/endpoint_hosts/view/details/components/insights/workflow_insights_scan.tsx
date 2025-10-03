@@ -22,7 +22,6 @@ import {
 } from '@elastic/eui';
 import { ElasticLLMCostAwarenessTour } from '@kbn/elastic-assistant/impl/tour/elastic_llm';
 import { NEW_FEATURES_TOUR_STORAGE_KEYS } from '@kbn/elastic-assistant/impl/tour/const';
-import { SetupKnowledgeBaseButton } from '@kbn/elastic-assistant/impl/knowledge_base/setup_knowledge_base_button';
 import {
   DEFEND_INSIGHTS_STORAGE_KEY,
   ConnectorSelectorInline,
@@ -68,6 +67,7 @@ export const WorkflowInsightsScanSection = ({
   });
   const { canWriteWorkflowInsights } = useUserPrivileges().endpointPrivileges;
 
+  // TODO: Trigger KB setup if not installed
   const { setupKB, setupOngoing, docsLinkText } = WORKFLOW_INSIGHTS.knowledgeBase;
 
   // Store the selected connector id in local storage so that it persists across page reloads
@@ -208,9 +208,6 @@ export const WorkflowInsightsScanSection = ({
                     </EuiLink>
                   )}
                 </EuiText>
-              </EuiFlexItem>
-              <EuiFlexItem>
-                <SetupKnowledgeBaseButton fill={false} />
               </EuiFlexItem>
             </EuiFlexGroup>
           )}
